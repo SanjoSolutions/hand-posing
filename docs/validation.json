@@ -1,0 +1,33 @@
+{
+  "blender": "Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)",
+  "archive": "hand_on_surface-1.0.0.zip",
+  "sha256": "db3e0a37ffb9ac67353289e0137987cd49b69dcaf460bb9e2c2634e127cc7035",
+  "checks": [
+    "manifest",
+    "archive",
+    "install",
+    "calibrate",
+    "snap",
+    "auto_key",
+    "saved_calibration",
+    "registration",
+    "disable_enable",
+    "fresh_process"
+  ],
+  "regular_preferences_preserved": true,
+  "source_files": {
+    "__init__.py": "f95d1cbe4c4faf18d9d215df8ef696e20b0bb1f7ccee37f700ae32a483351451",
+    "blender_manifest.toml": "9ddf044f5a1cb1221c1133ae08aaa5c80b2dccccaba01939e20c1c093c504a88",
+    "calibration.py": "febc57869e2fc611163d01731b3e8529776e8014ec7b4b4c279d312feb31da68",
+    "convex_hand_snap.py": "88dcf6b25c0b55359147f19bf49a0db7adf6e19823c241041e357d39753c2dbe",
+    "hand_surface_clearance.py": "f9316774037f08f17bd598ba8f82d92f38db4f4cacb06f45d40281bdec0c98ef",
+    "LICENSE": "230184f60bae2feaf244f10a8bac053c8ff33a183bcc365b4d8b876d2b7f4809",
+    "resting_hand_rectangle.py": "a45bb865cfef8eae26ae58c8bd8cf44a94372dc91861e6881f2cc9d592474469",
+    "rig_binding.py": "a75912510228da1d9d27b037bc8b4691920ccfa98f948f155388af519ad4cef3",
+    "skin_finger_refinement.py": "f44f8366cb66e420a7f25ac295132842ce125892c825a84b44c58812e251abb2",
+    "snap_hand.py": "0e9c10c9a50b6c3e1245d2e73c0190dd19046d977197b1adef03057ad85a1e75",
+    "test_hand_on_surface.py": "b475165b5de896220127df7f7cbdbae75921bfc7a07aee43c8570c19f9f7f44a"
+  },
+  "verification_date": "2026-10-21",
+  "platform": "Windows"
+}
