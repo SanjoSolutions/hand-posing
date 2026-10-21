@@ -26,3 +26,5 @@ Public previews use an adult female MPFB model with anatomically placed thumbs a
 demonstrate the extension's supported Rigify workflow.
 Preview posing uses the same native hand and finger joint constraints as the
 woman's rig in `man_and_woman3.blend`.
+The preview uses an MPFB skin texture and material so that fingernails and skin
+detail are clearly visible.

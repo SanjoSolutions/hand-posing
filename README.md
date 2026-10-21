@@ -9,6 +9,8 @@ the controls when enabled.
 The preview shows an adult female MPFB model's hand after snapping to a surface
 and refining the thumb with the editable rig controls.
 The model uses MPFB's CC0 core assets; see [preview provenance](docs/preview-provenance.json).
+Skin and nail appearance use MakeHuman's female diffuse texture and MPFB's
+fingernail roughness mask.
 
 Requires Blender 5.2 or later and standard Rigify hand controls with `.L` and `.R`
 names. Target surfaces should be locally convex. Source code uses GPL-3.0-or-later;

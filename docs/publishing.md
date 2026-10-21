@@ -1,5 +1,14 @@
 # Publishing
 
+## Publication status
+
+As of October 21, 2026, the GitHub 0.1.0 release is public. The official Blender
+Extensions listing exists as a draft at
+https://extensions.blender.org/add-ons/hand-posing/draft/ and has not been
+submitted for moderation. The corrected adult female MPFB previews are prepared
+locally; replacing the draft images and submitting the listing still require
+browser file-upload permission.
+
 ## Release package
 
 Run `python tools/check.py --blender PATH`, then `python tools/build.py --blender
@@ -61,6 +70,10 @@ limits after snapping. Add `--skip-render` to repeat that verification quickly.
 The thumbnail demonstrates editable pose refinement: after snapping, the thumb
 control is brought to a 35-degree spread while retaining the reference limits.
 The listing describes this refinement explicitly.
+Use `--skin-mhmat PATH` with `--mpfb-dir PATH` to apply the MakeHuman female skin
+through MPFB's MakeSkin material, including its fingernail roughness mask. The published
+previews use `young_caucasian_female.mhmat`, matching the reference woman's diffuse
+texture. The extracted preview mesh retains the model's UV coordinates.
 Review the current [addon guidelines](https://developer.blender.org/docs/handbook/extensions/addon_guidelines/)
 and [terms](https://extensions.blender.org/terms-of-service/) for the submission.
 The manifest declares GPL-3.0-or-later and requires Blender 5.2.

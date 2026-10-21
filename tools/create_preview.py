@@ -7,6 +7,7 @@ Blender with an isolated user profile. Model assets stay in .cache.
 """
 
 import argparse
+import hashlib
 import importlib
 import json
 import math
@@ -27,13 +28,13 @@ parser.add_argument('--source-blend', type=Path)
 parser.add_argument('--constraints', type=Path)
 parser.add_argument('--skip-render', action='store_true')
 parser.add_argument('--thumb-spread-degrees', type=float, default=35.0)
+parser.add_argument('--skin-mhmat', type=Path)
 arguments = parser.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else [])
 
-if arguments.source_blend:
-    bpy.ops.wm.open_mainfile(filepath=str(arguments.source_blend.resolve()))
-else:
+
+def load_mpfb():
     if not arguments.mpfb_dir:
-        parser.error('Provide --mpfb-dir or --source-blend')
+        parser.error('--mpfb-dir is required to generate a model or apply its skin')
     extension_root = arguments.mpfb_dir.resolve().parent
     bpy.ops.preferences.extension_repo_add(name='Preview Assets', type='LOCAL',
                                          use_custom_directory=True, custom_directory=str(extension_root))
@@ -41,8 +42,15 @@ else:
                 if Path(repo.directory).resolve() == extension_root)
     mpfb = addon_utils.enable(f'bl_ext.{repo.module}.{arguments.mpfb_dir.name}', default_set=True)
     assert mpfb, 'MPFB could not be enabled'
+    return importlib.import_module(mpfb.__name__ + '.services')
+
+
+services = None
+if arguments.source_blend:
+    bpy.ops.wm.open_mainfile(filepath=str(arguments.source_blend.resolve()))
+else:
+    services = load_mpfb()
     assert addon_utils.enable('rigify', default_set=True)
-    services = importlib.import_module(mpfb.__name__ + '.services')
     macros = services.TargetService.get_default_macro_info_dict()
     macros.update(gender=0.0, age=0.5)
     skin = services.HumanService.create_human(macro_detail_dict=macros)
@@ -57,6 +65,31 @@ rig = next(obj for obj in bpy.context.scene.objects
            if obj.type == 'ARMATURE' and 'hand_ik.R' in obj.pose.bones)
 skin = next(obj for obj in bpy.context.scene.objects if obj.type == 'MESH'
             and any(modifier.type == 'ARMATURE' and modifier.object == rig for modifier in obj.modifiers))
+if arguments.skin_mhmat:
+    services = services or load_mpfb()
+    makeskin = importlib.import_module(services.__package__.rsplit('.', 1)[0]
+                                     + '.entities.material.makeskinmaterial')
+    definition = makeskin.MakeSkinMaterial()
+    definition.populate_from_mhmat(str(arguments.skin_mhmat.resolve()))
+    skin_material = bpy.data.materials.new('MPFB adult female skin')
+    definition.apply_node_tree(skin_material)
+    skin.data.materials.clear()
+    skin.data.materials.append(skin_material)
+    definition.ensure_uvmap_node_for_texture_nodes(skin)
+    # Use MPFB's own nail mask to retain a smoother nail surface in the close-up.
+    nodes, links = skin_material.node_tree.nodes, skin_material.node_tree.links
+    shader = nodes.get('Principled BSDF')
+    nail_mask = nodes.new('ShaderNodeTexImage')
+    nail_mask.name = 'MPFB fingernail mask'
+    nail_mask.image = bpy.data.images.load(str(arguments.mpfb_dir / 'data/textures/mpfb_fingernails.jpg'), check_existing=True)
+    nail_mask.image.colorspace_settings.name = 'Non-Color'
+    roughness = nodes.new('ShaderNodeMapRange')
+    roughness.inputs['From Min'].default_value = 0
+    roughness.inputs['From Max'].default_value = 1
+    roughness.inputs['To Min'].default_value = .48
+    roughness.inputs['To Max'].default_value = .22
+    links.new(nail_mask.outputs['Color'], roughness.inputs['Value'])
+    links.new(roughness.outputs['Result'], shader.inputs['Roughness'])
 constraint_report = None
 if arguments.constraints:
     from tools.preview_constraints import apply_reference
@@ -127,12 +160,18 @@ points = [evaluated.matrix_world @ mesh.vertices[index].co for index in used]
 hand_mesh = bpy.data.meshes.new('MPFB evaluated hand')
 visible = selected | {vertex.index for vertex in mesh.vertices
                       if (evaluated.matrix_world @ vertex.co - palm.translation).length < .16}
-visible_faces = [tuple(polygon.vertices) for polygon in mesh.polygons
-                 if all(index in visible for index in polygon.vertices)]
+visible_polygons = [polygon for polygon in mesh.polygons
+                    if all(index in visible for index in polygon.vertices)]
+visible_faces = [tuple(polygon.vertices) for polygon in visible_polygons]
 visible_indices = sorted({index for face in visible_faces for index in face})
 mapping = {index: offset for offset, index in enumerate(visible_indices)}
 hand_mesh.from_pydata([evaluated.matrix_world @ mesh.vertices[index].co for index in visible_indices], [],
                       [tuple(mapping[index] for index in face) for face in visible_faces])
+for layer in mesh.uv_layers:
+    target = hand_mesh.uv_layers.new(name=layer.name)
+    coordinates = [tuple(layer.data[index].uv) for polygon in visible_polygons for index in polygon.loop_indices]
+    for loop, uv in zip(target.data, coordinates):
+        loop.uv = uv
 evaluated.to_mesh_clear()
 assert len(points) > 100, 'No usable MPFB hand geometry was extracted'
 hand = bpy.data.objects.new('MPFB hand posed by Hand Posing', hand_mesh)
@@ -151,13 +190,15 @@ def material(name, color, roughness):
     return value
 
 
-hand_mesh.materials.append(material('MPFB hand clay', (.48, .23, .13), .48))
+hand_mesh.materials.append(skin.active_material if arguments.skin_mhmat
+                           else material('MPFB hand clay', (.48, .23, .13), .48))
 surface.data.materials.append(material('Contact surface', (.08, .19, .24), .6))
 bevel = surface.modifiers.new('Soft surface edges', 'BEVEL')
 bevel.width, bevel.segments = .003, 3
 scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
 scene.cycles.samples = 64
+scene.view_settings.exposure = -1.0
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = 'PNG'
 scene.world = bpy.data.worlds.new('Preview world')
@@ -205,9 +246,14 @@ report = {'model': 'Adult female MPFB core basemesh', 'asset_license': 'CC0-1.0'
           'blender': bpy.app.version_string, 'addon_version': addon.__version__}
 report['thumb_refinement'] = {'manual_control_refinement': True, 'spread_before_degrees': spread_before,
                               'spread_after_degrees': spread_after}
+if arguments.skin_mhmat:
+    report['skin'] = {'material': arguments.skin_mhmat.name,
+                      'mhmat_sha256': hashlib.sha256(arguments.skin_mhmat.read_bytes()).hexdigest(),
+                      'shader': 'MPFB MakeSkin material with female diffuse texture and fingernail roughness mask',
+                      'asset_license': 'CC0-1.0'}
 if constraint_report:
     report['joint_limits'] = constraint_report
-(project / 'docs/preview-provenance.json').write_text(json.dumps(report, indent=2) + '\n')
+(project / 'docs/preview-provenance.json').write_text(json.dumps(report, indent=2) + '\n', newline='\n')
 print('MPFB preview verified:', {key: value for key, value in report.items() if key != 'joint_limits'})
 if constraint_report:
     print('Native limits:', constraint_report['native_limit_constraints'],

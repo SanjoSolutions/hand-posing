@@ -46,7 +46,7 @@ def export_reference(source, output):
               'rig': rig.name, 'constraints': records,
               'wrist_properties': {side: {key: rig.pose.bones[f'hand_ik.{side}'][key]
                                         for key in WRIST_PROPERTIES} for side in ('L', 'R')}}
-    output.write_text(json.dumps(result, indent=2) + '\n')
+    output.write_text(json.dumps(result, indent=2) + '\n', newline='\n')
     print('Exported reference constraints:', len(records))
 
 

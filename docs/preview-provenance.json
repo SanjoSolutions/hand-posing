@@ -11,6 +11,12 @@
     "spread_before_degrees": 94.29460728464,
     "spread_after_degrees": 34.999939766381644
   },
+  "skin": {
+    "material": "young_caucasian_female.mhmat",
+    "mhmat_sha256": "0bdea7786201f0b1132a24088336a97496ccdc54e9984db65d253a6a6d66f24f",
+    "shader": "MPFB MakeSkin material with female diffuse texture and fingernail roughness mask",
+    "asset_license": "CC0-1.0"
+  },
   "joint_limits": {
     "reference": "man_and_woman3.blend",
     "reference_sha256": "04405fcc16dc4459de065537c41f6eb25dbe335badea8ab80cc60283aad97395",
