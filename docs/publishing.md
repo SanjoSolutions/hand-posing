@@ -58,6 +58,9 @@ finger limits and two wrist limits in native custom spaces, preserving anatomica
 extension/flexion when fitting the frames to the new model. Wrist properties drive
 all 12 wrist bounds. The preview verifies evaluated joint rotations against the
 limits after snapping. Add `--skip-render` to repeat that verification quickly.
+The thumbnail demonstrates editable pose refinement: after snapping, the thumb
+control is brought to a 35-degree spread while retaining the reference limits.
+The listing describes this refinement explicitly.
 Review the current [addon guidelines](https://developer.blender.org/docs/handbook/extensions/addon_guidelines/)
 and [terms](https://extensions.blender.org/terms-of-service/) for the submission.
 The manifest declares GPL-3.0-or-later and requires Blender 5.2.

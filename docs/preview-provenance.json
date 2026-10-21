@@ -6,6 +6,11 @@
   "source": "https://static.makehumancommunity.org/mpfb/faq/why_use.html",
   "blender": "5.2.1 LTS",
   "addon_version": "0.1.0",
+  "thumb_refinement": {
+    "manual_control_refinement": true,
+    "spread_before_degrees": 94.29460728464,
+    "spread_after_degrees": 34.999939766381644
+  },
   "joint_limits": {
     "reference": "man_and_woman3.blend",
     "reference_sha256": "04405fcc16dc4459de065537c41f6eb25dbe335badea8ab80cc60283aad97395",

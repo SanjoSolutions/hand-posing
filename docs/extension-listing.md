@@ -46,7 +46,8 @@ leave visible gaps at finger joints; visual review remains part of the workflow.
 Move the arm or target closer if contact is beyond the rig's reach. Dense skin
 and target geometry increase solve time. Blender's Undo restores a prior pose.
 
-The previews show an adult female MPFB model's hand after snapping to a surface.
+The previews show an adult female MPFB model's hand after snapping to a surface
+and refining the thumb with the editable rig controls.
 The character is generated from MPFB's CC0 core assets. MPFB is used to create
 the demonstration model; it is not required to use Hand Posing on existing rigs.
 

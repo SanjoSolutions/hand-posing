@@ -9,12 +9,13 @@ Blender with an isolated user profile. Model assets stay in .cache.
 import argparse
 import importlib
 import json
+import math
 from pathlib import Path
 import sys
 
 import addon_utils
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 project = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project))
@@ -25,6 +26,7 @@ parser.add_argument('--mpfb-dir', type=Path)
 parser.add_argument('--source-blend', type=Path)
 parser.add_argument('--constraints', type=Path)
 parser.add_argument('--skip-render', action='store_true')
+parser.add_argument('--thumb-spread-degrees', type=float, default=35.0)
 arguments = parser.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else [])
 
 if arguments.source_blend:
@@ -85,6 +87,28 @@ surface.scale = (.22, .32, .025)
 bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 bpy.context.view_layer.update()
 solver.snap(surface)
+
+# Demonstrate the documented editable-control refinement step. A flat target
+# permits more thumb spread than this presentation needs; retain all native
+# limits while bringing the thumb toward a relaxed hand pose.
+base = rig.pose.bones['thumb.01.R']
+tip = rig.pose.bones['thumb.03.R']
+thumb_vector = rig.matrix_world.to_3x3() @ (tip.tail - base.head)
+thumb_vector -= normal * thumb_vector.dot(normal)
+thumb_vector.normalize()
+spread_before = math.degrees(math.atan2(abs(thumb_vector.dot(across)), thumb_vector.dot(heading)))
+sign = 1 if thumb_vector.dot(across) > 0 else -1
+angle = math.radians(arguments.thumb_spread_degrees)
+desired = heading * math.cos(angle) + across * sign * math.sin(angle)
+turn = math.atan2(normal.dot(thumb_vector.cross(desired)), thumb_vector.dot(desired))
+origin = rig.matrix_world @ base.head
+change = Matrix.Translation(origin) @ Quaternion(normal, turn).to_matrix().to_4x4() @ Matrix.Translation(-origin)
+base.matrix = rig.matrix_world.inverted() @ change @ rig.matrix_world @ base.matrix
+rig.update_tag()
+bpy.context.view_layer.update()
+thumb_vector = rig.matrix_world.to_3x3() @ (tip.tail - base.head)
+spread_after = math.degrees(math.atan2(abs(thumb_vector.dot(across)), thumb_vector.dot(heading)))
+assert spread_after < spread_before - 10, 'Thumb refinement did not reduce its spread'
 if constraint_report:
     from tools.preview_constraints import verify_evaluated_limits
     constraint_report.update(verify_evaluated_limits(rig))
@@ -179,6 +203,8 @@ report = {'model': 'Adult female MPFB core basemesh', 'asset_license': 'CC0-1.0'
           'side': 'R', 'rendered_hand_vertices': len(points),
           'source': 'https://static.makehumancommunity.org/mpfb/faq/why_use.html',
           'blender': bpy.app.version_string, 'addon_version': addon.__version__}
+report['thumb_refinement'] = {'manual_control_refinement': True, 'spread_before_degrees': spread_before,
+                              'spread_after_degrees': spread_after}
 if constraint_report:
     report['joint_limits'] = constraint_report
 (project / 'docs/preview-provenance.json').write_text(json.dumps(report, indent=2) + '\n')
