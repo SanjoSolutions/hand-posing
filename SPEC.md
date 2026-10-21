@@ -22,3 +22,7 @@ Publish Hand Posing on the official Blender Extensions directory. The public
 listing includes usage instructions, supported scope, a preview, and links to
 source code and support. The submitted package matches the tested release.
 Record submission and review status separately from local release preparation.
+Public previews use an adult female MPFB model with anatomically placed thumbs and
+demonstrate the extension's supported Rigify workflow.
+Preview posing uses the same native hand and finger joint constraints as the
+woman's rig in `man_and_woman3.blend`.

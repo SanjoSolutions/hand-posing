@@ -22,7 +22,17 @@ Blender preferences retained their original hashes.
 The six public workflow tests live in
 [`test_hand_posing.py`](../hand_posing/test_hand_posing.py).
 [`validation.json`](validation.json) records the tested package source hashes
-and release ZIP checksum. The [preview](preview.png) uses generated test geometry.
+and release ZIP checksum. The [preview](preview.png) shows an adult female MPFB
+core model's hand posed by the extension. The model was generated with MPFB
+2.0.17 and Rigify in Blender 5.2.1 LTS; Hand Posing captured its skin calibration
+and snapped the right hand to the preview surface. The camera frames the genuine
+MPFB thumb and fingers. See [provenance](preview-provenance.json).
+The preview also applies the woman's joint-limit policy from
+`man_and_woman3.blend`: 30 finger constraints, two wrist constraints, and 12
+adjustable wrist-bound drivers. Evaluated pose verification passed after snapping;
+the maximum angular limit error was below 0.000001 radians. The reference Blender
+file retained its original SHA-256 checksum. These constraints belong to the
+demonstration rig; the extension continues to honor the user's existing rig setup.
 
 The Hand Posing rename passed all 11 game fast checks, the game setup check,
 and the public dependency workflow check, including the saved helper adapter.

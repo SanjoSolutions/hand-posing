@@ -1,0 +1,211 @@
+{
+  "model": "Adult female MPFB core basemesh",
+  "asset_license": "CC0-1.0",
+  "side": "R",
+  "rendered_hand_vertices": 1624,
+  "source": "https://static.makehumancommunity.org/mpfb/faq/why_use.html",
+  "blender": "5.2.1 LTS",
+  "addon_version": "0.1.0",
+  "joint_limits": {
+    "reference": "man_and_woman3.blend",
+    "reference_sha256": "04405fcc16dc4459de065537c41f6eb25dbe335badea8ab80cc60283aad97395",
+    "native_limit_constraints": 32,
+    "wrist_limit_drivers": 12,
+    "constraints": [
+      {
+        "bone": "hand_tweak.L",
+        "constraint": "Natural Wrist Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_index.01.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_index.02.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.0022701025009155273
+      },
+      {
+        "bone": "f_index.03.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.009114295244216919
+      },
+      {
+        "bone": "thumb.01.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "thumb.02.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.003772139549255371
+      },
+      {
+        "bone": "thumb.03.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.018357664346694946
+      },
+      {
+        "bone": "f_middle.01.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_middle.02.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.010094776749610901
+      },
+      {
+        "bone": "f_middle.03.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.013786755502223969
+      },
+      {
+        "bone": "f_ring.01.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_ring.02.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.016572773456573486
+      },
+      {
+        "bone": "f_ring.03.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.005736254155635834
+      },
+      {
+        "bone": "f_pinky.01.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_pinky.02.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.006759479641914368
+      },
+      {
+        "bone": "f_pinky.03.L",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.030371571891009808
+      },
+      {
+        "bone": "hand_tweak.R",
+        "constraint": "Natural Wrist Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_index.01.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_index.02.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.0022701025009155273
+      },
+      {
+        "bone": "f_index.03.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.009114295244216919
+      },
+      {
+        "bone": "thumb.01.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "thumb.02.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.003772139549255371
+      },
+      {
+        "bone": "thumb.03.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.018357664346694946
+      },
+      {
+        "bone": "f_middle.01.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_middle.02.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.010094776749610901
+      },
+      {
+        "bone": "f_middle.03.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.013786755502223969
+      },
+      {
+        "bone": "f_ring.01.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_ring.02.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.016572773456573486
+      },
+      {
+        "bone": "f_ring.03.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.005736254155635834
+      },
+      {
+        "bone": "f_pinky.01.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.0
+      },
+      {
+        "bone": "f_pinky.02.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": -0.006759479641914368
+      },
+      {
+        "bone": "f_pinky.03.R",
+        "constraint": "Natural Finger Rotation",
+        "settings_match": true,
+        "rest_bend_adjustment": 0.030371571891009808
+      }
+    ],
+    "maximum_limit_error_radians": 1.1920928955078125e-07,
+    "evaluated_limits_passed": true
+  }
+}

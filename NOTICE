@@ -5,3 +5,8 @@ The hand fitting implementation originated in Sanjo Solutions' game authoring
 tools. This distribution contains the addon source and generated test fixtures.
 Character models, textures, animations, and other game assets belong to their
 respective distributions.
+
+The public hand previews are rendered from an adult female MPFB core model.
+MPFB / MakeHuman core assets are CC0-1.0:
+https://static.makehumancommunity.org/mpfb/faq/why_use.html
+The MPFB model and generator are not included in the extension ZIP.

@@ -4,9 +4,10 @@ Fit a Rigify hand to a nearby mesh surface. The addon adjusts the hand IK contro
 palm, and finger controls. The resulting pose stays editable. Auto Keying records
 the controls when enabled.
 
-![Generated hand contact fixtures](docs/preview.png)
+![Adult female MPFB hand posed against a surface](docs/preview.png)
 
-The preview shows generated test geometry after snapping both hands.
+The preview shows an adult female MPFB model's hand after snapping to a surface.
+The model uses MPFB's CC0 core assets; see [preview provenance](docs/preview-provenance.json).
 
 Requires Blender 5.2 or later and standard Rigify hand controls with `.L` and `.R`
 names. Target surfaces should be locally convex. Source code uses GPL-3.0-or-later;
