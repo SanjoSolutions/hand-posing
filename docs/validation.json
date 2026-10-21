@@ -1,7 +1,7 @@
 {
   "blender": "Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)",
-  "archive": "hand_posing-1.0.0.zip",
-  "sha256": "1077875fa9fd869a80373dfd0017a540afdc885e27400c340c2891af34f7cf9b",
+  "archive": "hand_posing-0.1.0.zip",
+  "sha256": "9fd15d4c2ef6e52d0ffc0a947e80cfe7ad8aa82a95a2c1af85a6d860ff0ad323",
   "checks": [
     "manifest",
     "archive",
@@ -16,8 +16,8 @@
   ],
   "regular_preferences_preserved": true,
   "source_files": {
-    "__init__.py": "4ca575d24642b483ea9e90baccddc5e3438b0f05d076310463d4580a87d8acca",
-    "blender_manifest.toml": "dec0413d85ffa845aa073a3ce53b590cfbc98be132906f35d1102f6629533a93",
+    "__init__.py": "84a46698bacc53899b208e6a03f0d260bd0cf90a11bafba42a3567bb1605d62d",
+    "blender_manifest.toml": "01173d7e9c327ab6fed132deba2a434589ce526cbe5c41a7106a5dbe1c4ef6b1",
     "calibration.py": "febc57869e2fc611163d01731b3e8529776e8014ec7b4b4c279d312feb31da68",
     "convex_hand_snap.py": "88dcf6b25c0b55359147f19bf49a0db7adf6e19823c241041e357d39753c2dbe",
     "hand_surface_clearance.py": "f9316774037f08f17bd598ba8f82d92f38db4f4cacb06f45d40281bdec0c98ef",

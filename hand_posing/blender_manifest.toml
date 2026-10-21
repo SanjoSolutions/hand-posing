@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "hand_posing"
-version = "1.0.0"
+version = "0.1.0"
 name = "Hand Posing"
 tagline = "Fit Rigify palms and fingers to nearby mesh surfaces"
 maintainer = "Sanjo Solutions"

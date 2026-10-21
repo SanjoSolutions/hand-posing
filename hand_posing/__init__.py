@@ -9,7 +9,7 @@ from bpy.app.handlers import persistent
 from .calibration import HandCalibration, retrieve_selected_rig
 from .snap_hand import HandSnap, HandSurface, retrieve_selected_hand, retrieve_snap_solver
 
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 
 
 def retrieve_source_revision():

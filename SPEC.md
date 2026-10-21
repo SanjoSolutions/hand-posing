@@ -15,3 +15,5 @@ The game uses the addon as its shared implementation.
 The project includes a GPL-3.0-or-later license, installation and scripting
 instructions, generated Blender test fixtures, automated installation checks,
 and a validated extension ZIP for public addon listings.
+
+The initial public release version is 0.1.0.

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 0.1.0
 
 - Extracted the calibrated hand, palm, and finger solver into a standalone addon.
 - Added hand calibration from Rigify skin geometry.

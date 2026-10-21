@@ -5,7 +5,7 @@
 Run `python tools/check.py --blender PATH`, then `python tools/build.py --blender
 PATH`. Publish the generated extension ZIP and checksum from `dist/` with a source
 tag matching `hand_posing/blender_manifest.toml` (the initial Hand Posing
-release uses `hand-posing-v1.0.0`). Review the validation report
+release uses `hand-posing-v0.1.0`). Review the validation report
 in `docs/validation.md` and update it for the selected source revision.
 
 The release includes Python source, the extension manifest, and the GPL license.
