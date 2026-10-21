@@ -38,8 +38,11 @@ Installation supports offline use on Windows, macOS, and Linux.
    restore a prior pose.
 
 In **Finger groups**, click **Add Group**, name the group, and select its fingers.
-Selecting a finger moves it out of any other group on that hand. **Snap Hand**
-keeps members close together within the surface and joint limits. Remove a group
+Selecting a finger moves it out of any other group on that hand and immediately
+brings the group's fingers together within the joint and selected surface limits.
+The wrist and unrelated fingers keep their pose. Grouping also works before
+calibration or choosing a surface. Auto Keying records the changed controls.
+**Snap Hand** retains the grouping when fitting to a surface. Remove a group
 with its **X** button, or deselect fingers to fit them independently. Groups are
 optional, separate for each hand, and saved in the Blender file. Empty groups and
 groups with one finger do not change the pose.

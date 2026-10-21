@@ -353,12 +353,12 @@ class FingerPlacement:
 class HandSnap:
     calibration_property = "Snap Hand Calibration"
 
-    def __init__(self, context, rig, side):
+    def __init__(self, context, rig, side, calibration=None):
         self.context = context
         self.rig = rig
         self.side = side
         self.hand = rig.pose.bones[f"hand_ik.{side}"]
-        self.calibration = json.loads(self.hand[self.calibration_property])
+        self.calibration = calibration if calibration is not None else json.loads(self.hand[self.calibration_property])
         self.wrist = retrieve_matrix(self.calibration["wrist"])
 
     def retrieve_hand_pose(self):

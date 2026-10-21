@@ -124,6 +124,7 @@ class HandPosingTests(unittest.TestCase):
     def setUp(self):
         ADDON.register()
         self.rig, self.skin = create_fixture()
+        bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
 
     def select_hand(self, side):
         bpy.context.view_layer.objects.active = self.rig
@@ -264,6 +265,99 @@ class HandPosingTests(unittest.TestCase):
         evaluated = self.rig.evaluated_get(bpy.context.evaluated_depsgraph_get())
         return (evaluated.pose.bones[f"{first}.03.{side}"].tail
                 - evaluated.pose.bones[f"{second}.03.{side}"].tail).length
+
+    def test_group_membership_applies_immediately_without_setup(self):
+        from unittest.mock import patch
+        for side in ("L", "R"):
+            with self.subTest(side=side):
+                hand = self.select_hand(side)
+                bpy.ops.hand.add_finger_group()
+                group = hand.hand_posing_finger_groups[0]
+                before = self.retrieve_tip_spacing(side, "f_index", "f_middle")
+                original = {bone.name: bone.matrix_basis.copy() for bone in self.rig.pose.bones}
+                self.select_hand("L" if side == "R" else "R")
+                with patch.object(ADDON.HandSnap, "snap") as snap:
+                    group.fingers = {"f_index", "f_middle"}
+                    snap.assert_not_called()
+                self.assertEqual(hand.hand_posing_group_error, "")
+                self.assertLess(self.retrieve_tip_spacing(side, "f_index", "f_middle"), before * .95)
+                self.assertNotIn("Snap Hand Calibration", hand)
+                self.assertIsNone(hand.snap_hand_surface)
+                for bone in self.rig.pose.bones:
+                    if not (bone.name.startswith(("f_index.", "f_middle.")) and bone.name.endswith("." + side)):
+                        self.assertEqual(bone.matrix_basis, original[bone.name], bone.name)
+                posed = {bone.name: bone.matrix_basis.copy() for bone in self.rig.pose.bones}
+                group.fingers = {"f_index"}
+                self.select_hand(side)
+                bpy.ops.hand.remove_finger_group(index=0)
+                for bone in self.rig.pose.bones:
+                    self.assertEqual(bone.matrix_basis, posed[bone.name], bone.name)
+
+    def test_immediate_group_preserves_contact_and_auto_keys_only_members(self):
+        hand = self.calibrate("R")
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.mesh.primitive_plane_add(size=2, location=(0, 0, .02))
+        target = bpy.context.object
+        target.rotation_euler.x = math.pi
+        bpy.context.view_layer.update()
+        solver = ADDON.retrieve_snap_solver(bpy.context, self.rig, "R")
+        solver.snap(target)
+        self.select_hand("R")
+        hand.snap_hand_surface = target
+        bpy.ops.hand.add_finger_group()
+        before = self.retrieve_tip_spacing("R", "f_index", "f_middle")
+        original = {bone.name: bone.matrix_basis.copy() for bone in self.rig.pose.bones}
+        bpy.context.scene.tool_settings.use_keyframe_insert_auto = True
+        hand.hand_posing_finger_groups[0].fingers = {"f_index", "f_middle"}
+        bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
+        self.assertEqual(hand.hand_posing_group_error, "")
+        self.assertLess(self.retrieve_tip_spacing("R", "f_index", "f_middle"), before * .95)
+        self.assert_group_bounds(solver)
+        for bone in self.rig.pose.bones:
+            if not (bone.name.startswith(("f_index.", "f_middle.")) and bone.name.endswith(".R")):
+                self.assertEqual(bone.matrix_basis, original[bone.name], bone.name)
+        surface = ADDON.HandSurface(target, bpy.context.evaluated_depsgraph_get(), self.rig, "R")
+        refinement = importlib.import_module(ADDON.__name__ + ".skin_finger_refinement")
+        indices = {index for calibration in solver.calibration["fingers"].values()
+                   for index in calibration["skin_vertices"]}
+        gaps = refinement.retrieve_skin_contacts(bpy.context, self.skin, indices, surface)
+        self.assertGreaterEqual(min(gap for gap, _normal, _point in gaps), -.002)
+        action = self.rig.animation_data.action
+        curves = [curve for layer in action.layers for strip in layer.strips
+                  for bag in strip.channelbags for curve in bag.fcurves]
+        self.assertEqual(len(curves), 60)
+        for curve in curves:
+            self.assertTrue(curve.data_path.startswith(('pose.bones["f_index.', 'pose.bones["f_middle.')))
+            values = self.rig.path_resolve(curve.data_path)
+            self.assertAlmostEqual(curve.evaluate(bpy.context.scene.frame_current), values[curve.array_index], places=5)
+
+    def test_membership_transfer_applies_once_and_failed_update_restores_pose(self):
+        from unittest.mock import patch
+        hand = self.calibrate("R")
+        for _index in range(2):
+            bpy.ops.hand.add_finger_group()
+        first, second = hand.hand_posing_finger_groups
+        first.fingers = {"f_index", "f_middle", "f_ring"}
+        grouping = importlib.import_module(ADDON.__name__ + ".finger_groups")
+        with patch.object(grouping, "apply_group_edit", wraps=grouping.apply_group_edit) as apply:
+            second.fingers = {"f_middle", "f_pinky"}
+            self.assertEqual(apply.call_count, 1)
+        self.assertEqual(first.fingers, {"f_index", "f_ring"})
+        self.assertEqual(hand.hand_posing_group_error, "")
+        original = {bone.name: bone.matrix_basis.copy() for bone in self.rig.pose.bones}
+
+        def fail_after_moving(snap, _surface, _memberships, preserve_pose=False):
+            snap.rig.pose.bones["f_middle.01.R"].rotation_quaternion.x += .2
+            raise ValueError("Could not apply group")
+
+        with patch.object(grouping, "fit_finger_groups", side_effect=fail_after_moving):
+            second.fingers = {"f_middle", "f_pinky", "thumb"}
+        self.assertEqual(hand.hand_posing_group_error, "Could not apply group")
+        for bone in self.rig.pose.bones:
+            self.assertLess(max(abs(a - b) for row, other in zip(bone.matrix_basis, original[bone.name])
+                                for a, b in zip(row, other)), .000001, bone.name)
+        second.fingers = {"f_middle"}
+        self.assertEqual(hand.hand_posing_group_error, "")
 
     def test_grouped_snap_keeps_fingers_close(self):
         for side in ("L", "R"):
@@ -419,8 +513,12 @@ class HandPosingTests(unittest.TestCase):
             solver.snap(target)
             before = self.retrieve_tip_spacing(side, "f_index", "f_middle")
             self.select_hand(side)
+            hand.snap_hand_surface = target
             bpy.ops.hand.add_finger_group()
             hand.hand_posing_finger_groups[0].fingers = {"f_index", "f_middle"}
+            self.assertEqual(hand.hand_posing_group_error, "")
+            self.assertLess(self.retrieve_tip_spacing(side, "f_index", "f_middle"), before)
+            self.assert_group_bounds(solver)
             solver.snap(target)
             self.assertLess(self.retrieve_tip_spacing(side, "f_index", "f_middle"), before)
             self.assert_group_bounds(solver)

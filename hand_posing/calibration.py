@@ -28,6 +28,28 @@ def retrieve_selected_rig(context):
     return None
 
 
+def retrieve_finger_structure(rig, side, finger, segment):
+    """Describe the Rigify joint independently of skin contact measurements."""
+    name = f"{finger}.{segment:02}.{side}"
+    bone = rig.data.bones[name]
+    if segment > 1:
+        parent = rig.data.bones[f"{finger}.{segment - 1:02}.{side}"]
+    else:
+        parent = bone.parent.parent if bone.parent and bone.parent.parent else bone.parent
+        if parent is None:
+            raise ValueError("Use a finger control with a Rigify parent: " + name)
+    rest = parent.matrix_local.inverted() @ bone.matrix_local
+    if segment == 1:
+        ranges = ((-60, 60), (-85, 85), (-45, 45)) if finger == "thumb" else ((-25, 90), (0, 0), (-20, 20))
+    else:
+        bend = math.degrees(rest.to_euler("XYZ").x)
+        extension, flexion = ((-10, 70) if segment == 2 else (-20, 90)) if finger == "thumb" else ((0, 110) if segment == 2 else (-5, 90))
+        ranges = ((extension - bend, flexion - bend), (0, 0), (0, 0))
+    return {"finger": finger, "segment": segment, "parent": parent.name,
+            "rest": serialize_matrix(rest),
+            "bounds": [[math.radians(value) for value in bounds] for bounds in ranges]}
+
+
 class HandCalibration:
     """Own the measurements for one hand; commit them after a complete capture."""
 
@@ -113,13 +135,7 @@ class HandCalibration:
     def retrieve_finger(self, finger, segment):
         name = f"{finger}.{segment:02}.{self.side}"
         bone = self.rig.data.bones[name]
-        if segment > 1:
-            parent = self.rig.data.bones[f"{finger}.{segment - 1:02}.{self.side}"]
-        else:
-            parent = bone.parent.parent if bone.parent and bone.parent.parent else bone.parent
-            if parent is None:
-                raise ValueError("Use a finger control with a Rigify parent: " + name)
-        rest = parent.matrix_local.inverted() @ bone.matrix_local
+        structure = retrieve_finger_structure(self.rig, self.side, finger, segment)
         points = self.retrieve_points(["DEF-" + name])
         if len(points) < 4:
             raise ValueError("Choose a skin with weighted vertices for " + name)
@@ -129,16 +145,7 @@ class HandCalibration:
         for fraction in (0.25, 0.5, 0.75, 1.0):
             nearby = sorted(local, key=lambda point: abs(point.y / bone.length - fraction))[:max(4, len(local) // 4)]
             depths.append(max(point.z for point in nearby))
-        if segment == 1:
-            opposition = (-85, 85)
-            ranges = ((-60, 60), opposition, (-45, 45)) if finger == "thumb" else ((-25, 90), (0, 0), (-20, 20))
-        else:
-            bend = math.degrees(rest.to_euler("XYZ").x)
-            extension, flexion = ((-10, 70) if segment == 2 else (-20, 90)) if finger == "thumb" else ((0, 110) if segment == 2 else (-5, 90))
-            ranges = ((extension - bend, flexion - bend), (0, 0), (0, 0))
-        return {"finger": finger, "segment": segment, "parent": parent.name,
-                "rest": serialize_matrix(rest),
-                "bounds": [[math.radians(value) for value in bounds] for bounds in ranges],
+        return {**structure,
                 "samples": [[0, bone.length * fraction, depth]
                             for fraction, depth in zip((0.25, 0.5, 0.75, 1.0), depths)], "depths": depths,
                 "skin_vertices": [index for index, (_point, weights) in enumerate(self.vertices)

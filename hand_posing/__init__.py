@@ -15,19 +15,36 @@ FINGER_ITEMS = tuple((identifier, label, "Move this finger into this group", 1 <
                      for index, (identifier, label) in enumerate((
                          ("thumb", "Thumb"), ("f_index", "Index"), ("f_middle", "Middle"),
                          ("f_ring", "Ring"), ("f_pinky", "Pinky"))))
+_group_updates = set()
 
 
-def update_group_members(group, _context):
-    """Enforce exclusive membership for UI edits and direct RNA assignments."""
+def update_group_members(group, context):
+    """Enforce exclusive membership and apply the complete edit once."""
     rig = group.id_data
     if not rig or rig.type != "ARMATURE":
         return
     for bone in rig.pose.bones:
         groups = bone.hand_posing_finger_groups
         if any(other.as_pointer() == group.as_pointer() for other in groups):
-            for other in groups:
-                if other.as_pointer() != group.as_pointer() and other.fingers & group.fingers:
-                    other.fingers = other.fingers - group.fingers
+            owner = bone.as_pointer()
+            if owner in _group_updates:
+                return
+            _group_updates.add(owner)
+            try:
+                changed = [group]
+                for other in groups:
+                    if other.as_pointer() != group.as_pointer() and other.fingers & group.fingers:
+                        other.fingers = other.fingers - group.fingers
+                        changed.append(other)
+                bone.hand_posing_group_error = ""
+                if bone.name.startswith("hand_ik."):
+                    from .finger_groups import apply_group_edit
+                    apply_group_edit(context or bpy.context, rig, bone.name.rsplit(".", 1)[-1],
+                                     [item.fingers for item in changed])
+            except (ValueError, KeyError, RuntimeError) as error:
+                bone.hand_posing_group_error = str(error)
+            finally:
+                _group_updates.remove(owner)
             break
 
 
@@ -76,6 +93,7 @@ class HAND_OT_remove_finger_group(bpy.types.Operator):
         if not 0 <= self.index < len(groups):
             return {"CANCELLED"}
         groups.remove(self.index)
+        rig.pose.bones[f"hand_ik.{side}"].hand_posing_group_error = ""
         return {"FINISHED"}
 
 
@@ -184,7 +202,11 @@ class HAND_PT_snap(bpy.types.Panel):
                     members.prop_enum(group, "fingers", identifier, text=label)
             grouping.operator("hand.add_finger_group", icon="ADD")
             if hand.hand_posing_finger_groups:
-                grouping.label(text="Select fingers, then Snap Hand")
+                grouping.label(text="Changes apply immediately")
+            if hand.hand_posing_group_error:
+                error = grouping.column()
+                error.alert = True
+                error.label(text=hand.hand_posing_group_error, icon="ERROR")
             setup = self.layout.box()
             setup.label(text="Calibration")
             setup.prop(hand, "hand_on_surface_skin", text="Hand skin")
@@ -221,6 +243,8 @@ def register():
     if not hasattr(bpy.types.PoseBone, "hand_posing_finger_groups"):
         bpy.types.PoseBone.hand_posing_finger_groups = bpy.props.CollectionProperty(
             name="Finger groups", type=HAND_PG_finger_group)
+    if not hasattr(bpy.types.PoseBone, "hand_posing_group_error"):
+        bpy.types.PoseBone.hand_posing_group_error = bpy.props.StringProperty(options={"SKIP_SAVE"})
     if restore_interface not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(restore_interface)
 
@@ -234,6 +258,6 @@ def unregister():
         previous = cls.__bases__[0].bl_rna_get_subclass_py(cls.__name__)
         if previous == cls:
             bpy.utils.unregister_class(cls)
-    for name in ("snap_hand_surface", "hand_on_surface_skin"):
+    for name in ("snap_hand_surface", "hand_on_surface_skin", "hand_posing_group_error"):
         if hasattr(bpy.types.PoseBone, name):
             delattr(bpy.types.PoseBone, name)

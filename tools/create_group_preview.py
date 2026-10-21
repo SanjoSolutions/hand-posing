@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Render a reproducible comparison of independent and grouped finger fitting."""
+"""Render grouping applied by membership edits without snapping again."""
 
 import math
 from pathlib import Path
@@ -20,13 +20,14 @@ surface.rotation_euler.x = math.pi
 bpy.context.view_layer.update()
 for side in ("L", "R"):
     addon.HandCalibration(bpy.context, rig, side, skin).capture()
+    rig.pose.bones[f"hand_ik.{side}"].snap_hand_surface = surface
+    addon.retrieve_snap_solver(bpy.context, rig, side).snap(surface)
 hand = rig.pose.bones["hand_ik.R"]
 for name, members in (("Index + middle", {"f_index", "f_middle"}), ("Ring + pinky", {"f_ring", "f_pinky"})):
     group = hand.hand_posing_finger_groups.add()
     group.name, group.fingers = name, members
-for side in ("L", "R"):
-    rig.pose.bones[f"hand_ik.{side}"].snap_hand_surface = surface
-    addon.retrieve_snap_solver(bpy.context, rig, side).snap(surface)
+    if hand.hand_posing_group_error:
+        raise RuntimeError(hand.hand_posing_group_error)
 
 
 def material(name, color):
@@ -59,7 +60,7 @@ scene.render.resolution_x, scene.render.resolution_y = 1400, 700
 scene.render.resolution_percentage = 100
 scene.world.color = (.25, .25, .25)
 white = material("Labels", (.8, .87, .95))
-for x, title in ((-.2, "Independent"), (.2, "Two finger groups")):
+for x, title in ((-.2, "Independent"), (.2, "Immediate groups")):
     curve = bpy.data.curves.new(title, "FONT")
     curve.body, curve.align_x, curve.size = title, "CENTER", .013
     label = bpy.data.objects.new(title, curve)

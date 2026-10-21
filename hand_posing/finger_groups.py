@@ -4,19 +4,22 @@
 """Keep grouped fingers together using evaluated, bounded rig controls."""
 
 from itertools import combinations
+from types import SimpleNamespace
 
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
-from .snap_hand import FingerComfort, JointRotationSearch, retrieve_matrix
+from .calibration import FINGERS, retrieve_finger_structure, serialize_matrix
+from .snap_hand import HandSnap, SkinHandSnap, HandSurface, FingerComfort, JointRotationSearch, retrieve_matrix
 from .skin_finger_refinement import retrieve_skin_contacts
 
 
 class FingerGroupFit:
     """Refine one group without moving the wrist or unrelated controls."""
 
-    def __init__(self, snap, surface, members):
+    def __init__(self, snap, surface, members, preserve_pose=False):
         self.snap, self.surface = snap, surface
         self.members = members
+        self.preserve_pose = preserve_pose
         self.joints = sorted(snap.calibration["fingers"].items(), key=lambda item: item[1]["segment"])
         self.chain = [(name, calibration) for name, calibration in self.joints
                       if calibration["finger"] in members]
@@ -51,7 +54,8 @@ class FingerGroupFit:
         across = (snap.retrieve_hand_pose() @ snap.wrist.inverted()).to_3x3().col[0]
         ordered = sorted(members, key=lambda finger: bases[finger].dot(across))
         self.pairs = list(zip(ordered, ordered[1:]))
-        self.minimum_gap = min(self.retrieve_distances())
+        self.initial_gaps = self.retrieve_distances() if surface else []
+        self.minimum_gap = min(self.initial_gaps, default=0.)
 
     def apply(self, rotations):
         changed = set()
@@ -102,14 +106,24 @@ class FingerGroupFit:
 
     def retrieve_cost(self, rotations):
         self.apply(rotations)
-        gaps = self.retrieve_distances()
-        penetration = max(0., .001 - min(gaps))
-        # Grouping must not undo the surface clearance from the hand fit.
-        excess = max(0., min(self.minimum_gap, -.001) - min(gaps))
-        contact = sum(max(0., gap - .0015) ** 2 for gap in gaps) / len(gaps)
+        penetration = excess = contact = 0.
+        if self.surface:
+            gaps = self.retrieve_distances()
+            if self.preserve_pose:
+                # A membership edit groups the authored pose without snapping it
+                # toward a distant target or moving the wrist to resolve contact.
+                penetration = max(0., min(self.minimum_gap, .001) - min(gaps))
+                contact = sum((gap - original) ** 2 for gap, original in zip(gaps, self.initial_gaps)) / len(gaps)
+            else:
+                penetration = max(0., .001 - min(gaps))
+                contact = sum(max(0., gap - .0015) ** 2 for gap in gaps) / len(gaps)
+            # Grouping must not undo the surface clearance from the hand fit.
+            excess = max(0., min(self.minimum_gap, -.001) - min(gaps))
+        movement = (sum((angle - initial) ** 2 for rotation, original in zip(rotations, self.rotations)
+                        for angle, initial in zip(rotation, original)) if self.preserve_pose else 0.)
         comfort = sum(comfort.retrieve_cost(rotation) for comfort, rotation in zip(self.comforts, rotations))
         return (self.retrieve_spacing_cost() + 1000 * penetration ** 2 + contact
-                + 100 * excess + .000001 * comfort)
+                + 100 * excess + .000001 * comfort + .00005 * movement)
 
     def fit(self):
         directions = [[(index, 0, 1) for index, (_name, calibration) in enumerate(self.chain)
@@ -119,10 +133,62 @@ class FingerGroupFit:
         self.apply(rotations)
 
 
-def fit_finger_groups(snap, surface):
-    groups = getattr(snap.hand, "hand_posing_finger_groups", ())
+def fit_finger_groups(snap, surface, memberships=None, preserve_pose=False):
+    if memberships is None:
+        memberships = [group.fingers for group in getattr(snap.hand, "hand_posing_finger_groups", ())]
     available = {calibration["finger"] for calibration in snap.calibration["fingers"].values()}
-    for group in groups:
-        members = group.fingers & available
+    for membership in memberships:
+        members = membership & available
         if len(members) > 1:
-            FingerGroupFit(snap, surface, members).fit()
+            FingerGroupFit(snap, surface, members, preserve_pose).fit()
+
+
+class GroupHandPose(SkinHandSnap):
+    """Use the current hand controls without requiring contact calibration."""
+
+    def __init__(self, context, rig, side):
+        hand = rig.pose.bones[f"hand_ik.{side}"]
+        calibration = None
+        if self.calibration_property not in hand:
+            fingers = {}
+            for finger in FINGERS:
+                for segment in (1, 2, 3):
+                    name = f"{finger}.{segment:02}.{side}"
+                    joint = retrieve_finger_structure(rig, side, finger, segment)
+                    length = rig.data.bones[name].length
+                    joint["samples"] = [[0, length * fraction, length * .2] for fraction in (.25, .5, .75, 1.)]
+                    fingers[name] = joint
+            calibration = {"wrist": serialize_matrix(Matrix.Identity(4)), "fingers": fingers}
+        HandSnap.__init__(self, context, rig, side, calibration)
+        self.skin = SimpleNamespace(object=None)
+        if self.calibration_property in hand:
+            from .convex_hand_snap import PalmSkin
+            self.skin = PalmSkin(context, rig, side)
+
+
+def apply_group_edit(context, rig, side, memberships):
+    """Apply a membership edit as one pose change, including optional Auto Keying."""
+    memberships = [members for members in memberships if len(members) > 1]
+    if not memberships:
+        return
+    snap = GroupHandPose(context, rig, side)
+    target = snap.hand.snap_hand_surface
+    surface = HandSurface(target, context.evaluated_depsgraph_get(), rig, side) if target else None
+    members = set().union(*memberships)
+    poses = {name: rig.pose.bones[name].matrix_basis.copy()
+             for name, calibration in snap.calibration["fingers"].items() if calibration["finger"] in members}
+    try:
+        fit_finger_groups(snap, surface, memberships, preserve_pose=True)
+        if context.scene.tool_settings.use_keyframe_insert_auto:
+            for name in poses:
+                bone = rig.pose.bones[name]
+                rotation = ("rotation_quaternion" if bone.rotation_mode == "QUATERNION" else
+                            "rotation_axis_angle" if bone.rotation_mode == "AXIS_ANGLE" else "rotation_euler")
+                for path in ("location", rotation, "scale"):
+                    bone.keyframe_insert(path, group=name)
+    except Exception:
+        for name, pose in poses.items():
+            rig.pose.bones[name].matrix_basis = pose
+        rig.update_tag()
+        context.view_layer.update()
+        raise

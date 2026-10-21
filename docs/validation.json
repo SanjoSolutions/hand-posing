@@ -1,7 +1,7 @@
 {
   "blender": "Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)",
   "archive": "hand_posing-0.1.0.zip",
-  "sha256": "057a931d504b7810f8544bdb2153da783395f5c550ec26142692aacbe9235e66",
+  "sha256": "011ee01eeb8a37a389a1dab74a1b394876865836298abacb85066518d3b293b2",
   "checks": [
     "manifest",
     "archive",
@@ -13,6 +13,9 @@
     "finger_groups",
     "saved_groups",
     "grouped_contact",
+    "immediate_groups",
+    "unconfigured_groups",
+    "group_auto_key",
     "registration",
     "disable_enable",
     "fresh_process"
@@ -28,17 +31,17 @@
     "5.2"
   ],
   "source_files": {
-    "__init__.py": "6e447c4bad3506992d47c45a23bb3ddab5cde7a3243d2f7c28be0722ec567a92",
+    "__init__.py": "c276b62a0759dda6a53a44d3b6f516a02a5d376b0a2e53b76be4aa8472ca4af4",
     "blender_manifest.toml": "01173d7e9c327ab6fed132deba2a434589ce526cbe5c41a7106a5dbe1c4ef6b1",
-    "calibration.py": "febc57869e2fc611163d01731b3e8529776e8014ec7b4b4c279d312feb31da68",
+    "calibration.py": "a4e6fda41c01302a44cb3e9c8078742b49797f2de3f440ea0ae24f46804fb5ad",
     "convex_hand_snap.py": "88dcf6b25c0b55359147f19bf49a0db7adf6e19823c241041e357d39753c2dbe",
-    "finger_groups.py": "2eb7970b7d8705c2a0255b0ed0b61ab280bb41c49aeedf36722e6e94dd227581",
+    "finger_groups.py": "3d75d863c77e30c62a32441ca17c2347b871cda36a2e7a333361ca1cc1811606",
     "hand_surface_clearance.py": "f9316774037f08f17bd598ba8f82d92f38db4f4cacb06f45d40281bdec0c98ef",
     "LICENSE": "230184f60bae2feaf244f10a8bac053c8ff33a183bcc365b4d8b876d2b7f4809",
     "resting_hand_rectangle.py": "a45bb865cfef8eae26ae58c8bd8cf44a94372dc91861e6881f2cc9d592474469",
     "rig_binding.py": "a75912510228da1d9d27b037bc8b4691920ccfa98f948f155388af519ad4cef3",
     "skin_finger_refinement.py": "f44f8366cb66e420a7f25ac295132842ce125892c825a84b44c58812e251abb2",
-    "snap_hand.py": "1e593c157ceccc00e4119c7c7463e13fe9488c984b6f32bd11eaf77df4f59ccb",
-    "test_hand_posing.py": "8e0c4b5345e811e1d7bea52a92dcbac4d0cd4b48444ae57c71805a593520d572"
+    "snap_hand.py": "d75a794e61fed0a616ccd5aa814be6bb445fe70928884caa515d17f3ca2f9cc3",
+    "test_hand_posing.py": "96ab64820da96e9c5261fb3e8073f0e92cfb2659af52c857c475410f34267a82"
   }
 }

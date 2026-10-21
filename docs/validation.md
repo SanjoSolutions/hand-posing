@@ -15,6 +15,7 @@ Blender preferences retained their original hashes.
 | Auto Keying | Authored hand and finger animation channels |
 | Saved calibration | Save and reopen a generated Blender file |
 | Finger groups | Add, edit, remove, and transfer exclusive membership; independent groups for both hands |
+| Immediate grouping | Membership edits move fingers without Snap Hand, calibration, or a surface; wrist and unrelated controls stay fixed; Auto Keying records only affected fingers |
 | Grouped contact | Measured closer spacing on flat and curved targets, including thumbs and generated Rigify hands; surface clearance and joint bounds |
 | Saved groups | Save/reopen and disable/enable preserve group names and members |
 | Rig state preservation | Calibration preserves control transforms and pose mode; failed reach restores controls and IK blend |
@@ -22,7 +23,7 @@ Blender preferences retained their original hashes.
 | Public distribution | Blender manifest and archive validation, GPL license, and release checksum |
 | Game dependency | Shared class identity, pinned source checksums, game setup, and contact regression checks |
 
-The eleven public workflow tests live in
+The fourteen public workflow tests live in
 [`test_hand_posing.py`](../hand_posing/test_hand_posing.py).
 [`validation.json`](validation.json) records the tested package source hashes
 and release ZIP checksum. The [preview](preview.png) shows an adult female MPFB
@@ -43,5 +44,5 @@ and thumb refinement;
 the maximum angular limit error was below 0.000001 radians. The reference Blender
 file retained its original SHA-256 checksum. These constraints belong to the
 demonstration rig; the extension continues to honor the user's existing rig setup.
-`tools/create_group_preview.py` renders a grouped/independent comparison and saves
-its editable Blender scene in `.cache/finger-groups/`.
+
+`tools/create_group_preview.py` renders an immediate-grouping/independent comparison without snapping again and saves
