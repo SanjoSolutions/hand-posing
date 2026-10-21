@@ -8,6 +8,7 @@ from bpy.app.handlers import persistent
 
 from .calibration import HandCalibration, retrieve_selected_rig
 from .snap_hand import HandSnap, HandSurface, retrieve_selected_hand, retrieve_snap_solver
+from .follow_relationships import retrieve_follow, retrieve_follows, set_follow, remove_follow
 
 __version__ = "0.1.0"
 
@@ -97,6 +98,83 @@ class HAND_OT_remove_finger_group(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class HAND_OT_set_follow_relationship(bpy.types.Operator):
+    bl_idname = "hand.set_follow_relationship"
+    bl_label = "Set Follow Relationship"
+    bl_description = "Keep bone A pointing at a point between bone B's base and tip"
+    bl_options = {"REGISTER", "UNDO"}
+
+    original_source: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
+    source_bone: bpy.props.StringProperty(name="Bone A", options={"SKIP_SAVE"})
+    target_armature: bpy.props.StringProperty(name="B's armature", options={"SKIP_SAVE"})
+    target_bone: bpy.props.StringProperty(name="Bone B", options={"SKIP_SAVE"})
+    offset: bpy.props.FloatProperty(
+        name="Offset", description="Point along bone B: 0 = base (0%), 1 = tip (100%)",
+        default=0., min=0., max=1., precision=3, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and context.object.type == "ARMATURE" and context.mode == "POSE"
+
+    def invoke(self, context, event):
+        rig = context.object
+        if self.original_source:
+            bone = rig.pose.bones.get(self.original_source)
+            constraint = retrieve_follow(bone) if bone else None
+            if not constraint:
+                self.report({"ERROR"}, "The relationship no longer exists")
+                return {"CANCELLED"}
+            self.source_bone = bone.name
+            self.target_armature = constraint.target.name if constraint.target else rig.name
+            self.target_bone, self.offset = constraint.subtarget, constraint.head_tail
+        else:
+            self.source_bone = context.active_pose_bone.name if context.active_pose_bone else ""
+            self.target_armature = rig.name
+            targets = [bone for bone in (context.selected_pose_bones or [])
+                       if bone.name != self.source_bone]
+            self.target_bone = targets[0].name if len(targets) == 1 else ""
+            self.offset = 0.
+        return context.window_manager.invoke_props_dialog(self, width=380)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop_search(self, "source_bone", context.object.data, "bones")
+        layout.prop_search(self, "target_armature", bpy.data, "objects")
+        target = bpy.data.objects.get(self.target_armature)
+        if target and target.type == "ARMATURE":
+            layout.prop_search(self, "target_bone", target.data, "bones")
+        else:
+            layout.label(text="Choose an armature for bone B", icon="ERROR")
+        layout.prop(self, "offset", slider=True)
+        layout.label(text="0 = base (0%)    1 = tip (100%)")
+
+    def execute(self, context):
+        try:
+            set_follow(context.object, self.source_bone,
+                       bpy.data.objects.get(self.target_armature), self.target_bone,
+                       self.offset, self.original_source)
+        except ValueError as error:
+            self.report({"ERROR"}, str(error))
+            return {"CANCELLED"}
+        return {"FINISHED"}
+
+
+class HAND_OT_remove_follow_relationship(bpy.types.Operator):
+    bl_idname = "hand.remove_follow_relationship"
+    bl_label = "Remove Follow Relationship"
+    bl_description = "Release bone A from this follow relationship"
+    bl_options = {"REGISTER", "UNDO"}
+
+    source_bone: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        return HAND_OT_set_follow_relationship.poll(context)
+
+    def execute(self, context):
+        return {"FINISHED"} if remove_follow(context.object, self.source_bone) else {"CANCELLED"}
+
+
 def retrieve_source_revision():
     """Return the SHA-256 of the current package's Python sources."""
     import hashlib
@@ -114,7 +192,8 @@ def reload_for_development():
     import importlib
     import sys
     for name in ("rig_binding", "calibration", "snap_hand", "resting_hand_rectangle",
-                 "convex_hand_snap", "hand_surface_clearance", "skin_finger_refinement", "finger_groups"):
+                 "convex_hand_snap", "hand_surface_clearance", "skin_finger_refinement", "finger_groups",
+                 "follow_relationships"):
         qualified = __name__ + "." + name
         if qualified in sys.modules:
             importlib.reload(sys.modules[qualified])
@@ -122,6 +201,9 @@ def reload_for_development():
     for name in ("HandSnap", "HandSurface", "retrieve_selected_hand", "retrieve_snap_solver"):
         globals()[name] = getattr(solver, name)
     globals()["HandCalibration"] = sys.modules[__name__ + ".calibration"].HandCalibration
+    follows = sys.modules[__name__ + ".follow_relationships"]
+    for name in ("retrieve_follow", "retrieve_follows", "set_follow", "remove_follow"):
+        globals()[name] = getattr(follows, name)
     register()
 
 
@@ -216,8 +298,36 @@ class HAND_PT_snap(bpy.types.Panel):
             self.layout.label(text="Select a Rigify hand IK or finger control")
 
 
+class HAND_PT_follow_relationships(bpy.types.Panel):
+    bl_label = "Follow relationships"
+    bl_idname = "HAND_PT_follow_relationships"
+    bl_parent_id = "HAND_PT_snap"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+
+    def draw(self, context):
+        layout = self.layout
+        for bone, constraint in retrieve_follows(context.object):
+            box = layout.box()
+            row = box.row(align=True)
+            row.label(text=f"A: {bone.name}", icon="BONE_DATA")
+            row.operator("hand.set_follow_relationship", text="", icon="GREASEPENCIL").original_source = bone.name
+            row.operator("hand.remove_follow_relationship", text="", icon="X").source_bone = bone.name
+            target = constraint.target
+            valid = target and target.type == "ARMATURE" and constraint.subtarget in target.pose.bones
+            label = box.row()
+            label.alert = not valid
+            label.label(text=f"B: {constraint.subtarget or '(choose a bone)'}", icon="BONE_DATA" if valid else "ERROR")
+            if target and target != context.object:
+                box.label(text=target.name, icon="ARMATURE_DATA")
+            box.prop(constraint, "head_tail", text="Offset", slider=True)
+        layout.operator("hand.set_follow_relationship", text="Add Relationship", icon="ADD")
+        layout.label(text="Offset: 0 = base, 1 = tip")
+
+
 CLASSES = (HAND_PG_finger_group, HAND_OT_add_finger_group, HAND_OT_remove_finger_group,
-           HAND_OT_calibrate_surface, HAND_OT_snap, HAND_PT_snap)
+           HAND_OT_set_follow_relationship, HAND_OT_remove_follow_relationship,
+           HAND_OT_calibrate_surface, HAND_OT_snap, HAND_PT_snap, HAND_PT_follow_relationships)
 
 
 @persistent

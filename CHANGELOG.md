@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added saved bone follow relationships with an adjustable base-to-tip offset,
+  live pose and animation tracking, cross-armature targets, and cycle checks.
+
 ## 0.1.0
 
 - Extracted the calibrated hand, palm, and finger solver into a standalone addon.

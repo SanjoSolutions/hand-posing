@@ -47,6 +47,19 @@ with its **X** button, or deselect fingers to fit them independently. Groups are
 optional, separate for each hand, and saved in the Blender file. Empty groups and
 groups with one finger do not change the pose.
 
+In **Follow relationships**, click **Add Relationship** and choose **Bone A**
+(the bone that points), **B's armature**, and **Bone B** (the target).
+The active bone is preselected as A. If exactly one other bone is selected, it
+is preselected as B. Both bones can be on the same armature or different ones.
+Set **Offset** from 0 to 1: **0** points at B's base, **0.5** at its midpoint,
+and **1** at its tip. A keeps aiming as B moves or animates; no Snap Hand,
+surface, or calibration is needed. This also works on bones outside Rigify hands.
+Use the pencil button to edit the pair, the offset slider to change the aim
+point immediately, or **X** to remove the relationship. Each A has one target;
+self-following and cycles through parents or bone constraints are rejected.
+Relationships support Undo and save with the Blender file. They use a native
+**Hand Posing Follow** constraint; keep that name so the sidebar can find it.
+
 Calibrate each hand once and save the Blender file. Existing `Snap Hand
 Calibration` data works directly. Calibrating again replaces that hand's stored
 contact measurements. Capture after changes to hand proportions or skin geometry.

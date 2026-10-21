@@ -535,8 +535,226 @@ class HandPosingTests(unittest.TestCase):
             self.assertGreaterEqual(min(gaps), -.002)
 
 
+def create_follow_fixture(name="Follow rig"):
+    """An ordinary armature: following needs neither Rigify nor calibration."""
+    if bpy.context.object and bpy.context.object.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    rig = bpy.data.objects.new(name, bpy.data.armatures.new(name))
+    bpy.context.scene.collection.objects.link(rig)
+    bpy.context.view_layer.objects.active = rig
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    for name, head, tail in (("A", (0, 0, 0), (0, 1, 0)),
+                             ("B", (3, 2, 0), (3, 4, 0)),
+                             ("C", (-3, 3, 1), (-3, 4, 1)),
+                             ("D", (0, 5, 1), (0, 6, 1)),
+                             ("Child", (0, 1, 0), (0, 2, 0))):
+        bone = rig.data.edit_bones.new(name)
+        bone.head, bone.tail = head, tail
+    rig.data.edit_bones["Child"].parent = rig.data.edit_bones["A"]
+    rig.data.edit_bones["Child"].use_connect = True
+    bpy.ops.object.mode_set(mode="POSE")
+    rig.data.bones.active = rig.data.bones["A"]
+    bpy.context.view_layer.update()
+    return rig
+
+
+class FollowRelationshipTests(unittest.TestCase):
+    def setUp(self):
+        ADDON.register()
+        if bpy.context.object and bpy.context.object.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.select_all(action="SELECT")
+        bpy.ops.object.delete(use_global=False)
+        bpy.context.scene.frame_set(1)
+        self.rig = create_follow_fixture()
+
+    def add(self, source="A", target="B", offset=0., target_rig=None, original=""):
+        if bpy.context.object != self.rig and bpy.context.object.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.context.view_layer.objects.active = self.rig
+        self.rig.select_set(True)
+        if self.rig.mode != "POSE":
+            bpy.ops.object.mode_set(mode="POSE")
+        self.assertEqual(bpy.ops.hand.set_follow_relationship(
+            source_bone=source, target_armature=(target_rig or self.rig).name,
+            target_bone=target, offset=offset, original_source=original), {"FINISHED"})
+        return ADDON.retrieve_follow(self.rig.pose.bones[source])
+
+    def assert_aim(self, source="A", target="B", offset=0., target_rig=None):
+        bpy.context.view_layer.update()
+        graph = bpy.context.evaluated_depsgraph_get()
+        evaluated = self.rig.evaluated_get(graph)
+        target_object = (target_rig or self.rig).evaluated_get(graph)
+        bone, other = evaluated.pose.bones[source], target_object.pose.bones[target]
+        head = evaluated.matrix_world @ bone.head
+        direction = (evaluated.matrix_world @ bone.tail - head).normalized()
+        point = target_object.matrix_world @ other.head.lerp(other.tail, offset)
+        self.assertGreater(direction.dot((point - head).normalized()), 1 - 1e-6)
+        return head, (evaluated.matrix_world @ bone.tail - head).length
+
+    def test_base_midpoint_tip_and_live_offset(self):
+        constraint = self.add()
+        for offset in (0., .25, .5, .75, 1.):
+            with self.subTest(offset=offset):
+                constraint.head_tail = offset
+                head, length = self.assert_aim(offset=offset)
+                self.assertLess(head.length, 1e-6)
+                self.assertAlmostEqual(length, 1., places=6)
+                self.assertEqual(self.rig.pose.bones["A"].matrix_basis, Matrix.Identity(4))
+        constraint.head_tail = -2
+        self.assertEqual(constraint.head_tail, 0.)
+        constraint.head_tail = 2
+        self.assertEqual(constraint.head_tail, 1.)
+
+    def test_target_motion_rotation_and_animation(self):
+        self.add(offset=.5)
+        target = self.rig.pose.bones["B"]
+        target.rotation_mode = "XYZ"
+        target.keyframe_insert("location", frame=1)
+        target.keyframe_insert("rotation_euler", frame=1)
+        target.location = (1, -2, 3)
+        target.rotation_euler = (.4, -.8, 1.2)
+        target.keyframe_insert("location", frame=20)
+        target.keyframe_insert("rotation_euler", frame=20)
+        for frame in (1, 6, 13, 20, 1):
+            bpy.context.scene.frame_set(frame)
+            self.assert_aim(offset=.5)
+
+    def test_cross_armature_with_world_transforms(self):
+        target_rig = create_follow_fixture("Target rig")
+        self.rig.location = (-2, 1, 3)
+        self.rig.rotation_euler = (.2, -.3, .7)
+        self.rig.scale = (1.2, 1.2, 1.2)
+        target_rig.location = (5, -3, 1)
+        target_rig.rotation_euler = (-.4, .8, -.2)
+        target_rig.scale = (.5, 2, 1.5)
+        self.add(offset=.75, target_rig=target_rig)
+        self.assert_aim(offset=.75, target_rig=target_rig)
+        target_rig.location.x += 3
+        target_rig.pose.bones["B"].rotation_mode = "XYZ"
+        target_rig.pose.bones["B"].rotation_euler.z = 1.
+        self.assert_aim(offset=.75, target_rig=target_rig)
+
+    def test_multiple_relationships_and_chain(self):
+        self.add(source="B", target="C", offset=1.)
+        self.add(offset=1.)
+        self.add(source="D", offset=.5)
+        self.rig.pose.bones["C"].location = (.5, 1, 2)
+        self.assert_aim(source="B", target="C", offset=1.)
+        self.assert_aim(offset=1.)
+        self.assert_aim(source="D", offset=.5)
+        self.assertEqual(len(list(ADDON.retrieve_follows(self.rig))), 3)
+
+    def test_edit_and_remove_preserve_other_constraints_and_pose(self):
+        original = self.rig.pose.bones["A"].matrix_basis.copy()
+        native = self.rig.pose.bones["A"].constraints.new("LIMIT_ROTATION")
+        self.add()
+        self.add(target="C", offset=.25, original="A")
+        self.assert_aim(target="C", offset=.25)
+        self.add(source="D", target="C", offset=1., original="A")
+        self.assertIsNone(ADDON.retrieve_follow(self.rig.pose.bones["A"]))
+        self.assertEqual(self.rig.pose.bones["A"].constraints[0], native)
+        self.assertEqual(self.rig.pose.bones["A"].matrix_basis, original)
+        self.assert_aim(source="D", target="C", offset=1.)
+        self.assertEqual(bpy.ops.hand.remove_follow_relationship(source_bone="D"), {"FINISHED"})
+        self.assertEqual(bpy.ops.hand.remove_follow_relationship(source_bone="D"), {"CANCELLED"})
+        bpy.context.view_layer.update()
+        self.assertEqual(self.rig.pose.bones["D"].matrix_basis, Matrix.Identity(4))
+        self.assertEqual(len(list(ADDON.retrieve_follows(self.rig))), 0)
+
+    def test_invalid_pairs_leave_existing_relationship_unchanged(self):
+        original = self.add(offset=.5)
+        for source, target, original_source, message in (
+                ("A", "A", "A", "itself"), ("A", "Child", "A", "circular"),
+                ("A", "Missing", "A", "bone B"), ("Missing", "B", "", "bone A"),
+                ("A", "C", "", "already"), ("D", "C", "D", "no longer")):
+            with self.subTest(source=source, target=target), self.assertRaisesRegex(RuntimeError, message):
+                bpy.ops.hand.set_follow_relationship(source_bone=source,
+                    target_armature=self.rig.name, target_bone=target, original_source=original_source)
+        self.assertEqual(original.subtarget, "B")
+        self.assertEqual(original.head_tail, .5)
+        self.assertEqual(len(list(ADDON.retrieve_follows(self.rig))), 1)
+        self.assert_aim(offset=.5)
+
+    def test_cycles_through_follows_and_native_constraints_are_rejected(self):
+        self.add()
+        self.add(source="B", target="C")
+        with self.assertRaisesRegex(ValueError, "circular"):
+            ADDON.set_follow(self.rig, "C", self.rig, "A")
+        native = self.rig.pose.bones["D"].constraints.new("COPY_ROTATION")
+        native.target, native.subtarget = self.rig, "A"
+        with self.assertRaisesRegex(ValueError, "circular"):
+            ADDON.set_follow(self.rig, "A", self.rig, "D", original_source="A")
+        target_rig = create_follow_fixture("Other rig")
+        ADDON.set_follow(target_rig, "A", self.rig, "A")
+        with self.assertRaisesRegex(ValueError, "circular"):
+            ADDON.set_follow(self.rig, "C", target_rig, "A")
+
+    def test_save_reopen_rename_and_registration(self):
+        import tempfile
+        target = create_follow_fixture("Other rig")
+        self.add(offset=.5, target_rig=target)
+        self.rig.data.bones["A"].name = "Renamed A"
+        target.data.bones["B"].name = "Renamed B"
+        target.name = "Renamed target rig"
+        ADDON.register()
+        ADDON.unregister()
+        self.assertIsNone(bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_follow_relationships"))
+        self.assert_aim(source="Renamed A", target="Renamed B", offset=.5, target_rig=target)
+        ADDON.register()
+        self.assertEqual(len(list(ADDON.retrieve_follows(self.rig))), 1)
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "follows.blend")
+            bpy.ops.wm.save_as_mainfile(filepath=path)
+            bpy.ops.wm.open_mainfile(filepath=path)
+        self.rig = bpy.data.objects["Follow rig"]
+        target = bpy.data.objects["Renamed target rig"]
+        constraint = ADDON.retrieve_follow(self.rig.pose.bones["Renamed A"])
+        self.assertEqual(constraint.target, target)
+        self.assertEqual(constraint.subtarget, "Renamed B")
+        self.assertEqual(constraint.head_tail, .5)
+        target.pose.bones["Renamed B"].location = (2, 1, 3)
+        self.assert_aim(source="Renamed A", target="Renamed B", offset=.5, target_rig=target)
+
+    def test_deleted_target_can_be_repaired_or_removed(self):
+        target = create_follow_fixture("Other rig")
+        self.add(target_rig=target)
+        bpy.data.objects.remove(target, do_unlink=True)
+        bpy.context.view_layer.update()
+        self.assertIsNone(ADDON.retrieve_follow(self.rig.pose.bones["A"]).target)
+        self.add(original="A")
+        self.assert_aim()
+        self.assertEqual(bpy.ops.hand.remove_follow_relationship(source_bone="A"), {"FINISHED"})
+
+    def test_undo_redo_creation_edit_and_removal(self):
+        bpy.ops.ed.undo_push(message="Before follow")
+        self.add(offset=.5)
+        bpy.ops.ed.undo_push(message="Added follow")
+        self.add(target="C", offset=1., original="A")
+        bpy.ops.ed.undo_push(message="Edited follow")
+        bpy.ops.hand.remove_follow_relationship(source_bone="A")
+        bpy.ops.ed.undo_push(message="Removed follow")
+        for target, offset in (("C", 1.), ("B", .5)):
+            self.assertEqual(bpy.ops.ed.undo(), {"FINISHED"})
+            self.rig = bpy.data.objects["Follow rig"]
+            self.assert_aim(target=target, offset=offset)
+        self.assertEqual(bpy.ops.ed.undo(), {"FINISHED"})
+        self.rig = bpy.data.objects["Follow rig"]
+        self.assertIsNone(ADDON.retrieve_follow(self.rig.pose.bones["A"]))
+        for target, offset in (("B", .5), ("C", 1.)):
+            self.assertEqual(bpy.ops.ed.redo(), {"FINISHED"})
+            self.rig = bpy.data.objects["Follow rig"]
+            self.assert_aim(target=target, offset=offset)
+        self.assertEqual(bpy.ops.ed.redo(), {"FINISHED"})
+        self.rig = bpy.data.objects["Follow rig"]
+        self.assertIsNone(ADDON.retrieve_follow(self.rig.pose.bones["A"]))
+
+
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(HandPosingTests)
+    suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(FollowRelationshipTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     if not result.wasSuccessful():
         raise RuntimeError("Hand Posing validation failed")

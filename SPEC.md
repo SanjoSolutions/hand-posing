@@ -18,6 +18,13 @@ any selected surface, and Auto Keying records the changed controls. Groups also
 apply when snapping and belong to the Blender file. Ungrouped fingers keep their
 independent fitting behavior.
 
+Users can create, edit, and remove follow relationships between bones, including
+bones on different armatures. In each relationship, bone A keeps pointing at
+bone B as the pose changes. An offset from 0 to 1 selects the point along B:
+0 is its base, 0.5 is halfway, and 1 is its tip. Each bone can follow one target.
+Self-following and circular relationships are rejected. Relationships belong to
+the Blender file and work without hand calibration or a surface.
+
 The addon works independently of the game that originally supplied its solver.
 The game uses the addon as its shared implementation.
 

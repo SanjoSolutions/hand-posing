@@ -18,13 +18,26 @@ Blender preferences retained their original hashes.
 | Immediate grouping | Membership edits move fingers without Snap Hand, calibration, or a surface; wrist and unrelated controls stay fixed; Auto Keying records only affected fingers |
 | Grouped contact | Measured closer spacing on flat and curved targets, including thumbs and generated Rigify hands; surface clearance and joint bounds |
 | Saved groups | Save/reopen and disable/enable preserve group names and members |
+| Follow relationships | Create, edit, remove, and chain bone pairs; evaluated base, midpoint, tip, and intermediate offsets; live offset changes and animated targets |
+| Follow safety and persistence | Self-following, duplicate sources, and cycles are rejected; cross-armature transforms, bone renaming, deleted-target repair, save/reopen, disable/enable, and Undo/Redo |
 | Rig state preservation | Calibration preserves control transforms and pose mode; failed reach restores controls and IK blend |
 | Blender addon lifecycle | Repeated registration, disable, enable, and fresh-process checks |
 | Public distribution | Blender manifest and archive validation, GPL license, and release checksum |
 | Game dependency | Shared class identity, pinned source checksums, game setup, and contact regression checks |
 
-The fourteen public workflow tests live in
+The public workflow tests live in
 [`test_hand_posing.py`](../hand_posing/test_hand_posing.py).
+
+Follow relationships passed the full isolated package check on October 21, 2026,
+with Blender 5.2.1 LTS: 24 workflow tests plus ZIP validation, installation, and
+fresh-process checks. These include ten follow tests covering Undo/Redo.
+Existing hand calibration, snapping, and grouping tests passed.
+`tools/create_follow_preview.py` captures the native sidebar and edit dialog in
+a separate Blender process and saves an editable example scene under
+`.cache/follow-relationships/`. Its base, midpoint, and tip guides are checked
+against evaluated bone directions before capture. The current local package
+and installation report are in `dist/`.
+
 [`validation.json`](validation.json) records the tested package source hashes
 and release ZIP checksum. The [preview](preview.png) shows an adult female MPFB
 core model's hand posed by the extension. The model was generated with MPFB
