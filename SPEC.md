@@ -17,3 +17,8 @@ instructions, generated Blender test fixtures, automated installation checks,
 and a validated extension ZIP for public addon listings.
 
 The initial public release version is 0.1.0.
+
+Publish Hand Posing on the official Blender Extensions directory. The public
+listing includes usage instructions, supported scope, a preview, and links to
+source code and support. The submitted package matches the tested release.
+Record submission and review status separately from local release preparation.

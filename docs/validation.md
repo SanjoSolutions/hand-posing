@@ -31,7 +31,10 @@ The extraction's six focused contact checks passed:
 refinement workflow test, 12 cache tests, and two model placement tests. The game
 setup and public dependency workflow checks also passed.
 
-Runtime verification covers Windows. The source includes a Linux CI workflow;
-its hosted execution belongs to the public repository's first CI run. Locally
+Runtime verification covers Windows and Linux with Blender 5.2.1 LTS. The
+[Linux CI run](https://github.com/SanjoSolutions/hand-posing/actions/runs/39630909318)
+passed for release source `9d87a6c2db65bba176faecc2d672051529c49fdf`.
+The Windows installation and six public workflow tests were rerun successfully
+during submission preparation on October 21, 2026. Locally
 convex targets, standard Rigify controls, and human-scale geometry define the
 supported scope. Visual pose review remains part of animation authoring.

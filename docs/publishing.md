@@ -10,7 +10,10 @@ in `docs/validation.md` and update it for the selected source revision.
 
 The release includes Python source, the extension manifest, and the GPL license.
 The source checkout also includes documentation and generated fixture tests.
-Set the repository's public URL in the listing once the repository is published.
+The public source repository is https://github.com/SanjoSolutions/hand-posing.
+Use https://github.com/SanjoSolutions/hand-posing/issues as the support URL.
+The complete description for the official Extensions listing is in
+[`extension-listing.md`](extension-listing.md).
 
 ## Listing draft
 
@@ -44,6 +47,10 @@ test geometry and can be reproduced with `tools/create_preview.py` through Blend
 Review the current [addon guidelines](https://developer.blender.org/docs/handbook/extensions/addon_guidelines/)
 and [terms](https://extensions.blender.org/terms-of-service/) for the submission.
 The manifest declares GPL-3.0-or-later and requires Blender 5.2.
+
+Sign in with Blender ID at https://extensions.blender.org/submit/. Upload the
+release ZIP, add the listing description and preview, set the source and support
+links, and submit for moderation. Publication requires the platform's approval.
 
 ## Other addon marketplaces
 
