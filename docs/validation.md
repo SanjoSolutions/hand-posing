@@ -20,11 +20,13 @@ Blender preferences retained their original hashes.
 | Game dependency | Shared class identity, pinned source checksums, game setup, and contact regression checks |
 
 The six public workflow tests live in
-[`test_hand_on_surface.py`](../hand_on_surface/test_hand_on_surface.py).
+[`test_hand_posing.py`](../hand_posing/test_hand_posing.py).
 [`validation.json`](validation.json) records the tested package source hashes
 and release ZIP checksum. The [preview](preview.png) uses generated test geometry.
 
-The game fast suite passed all 11 checks. Its six focused contact checks passed:
+The Hand Posing rename passed all 11 game fast checks, the game setup check,
+and the public dependency workflow check, including the saved helper adapter.
+The extraction's six focused contact checks passed:
 17 base snapping tests, 12 convex snapping tests, five rectangle tests, one
 refinement workflow test, 12 cache tests, and two model placement tests. The game
 setup and public dependency workflow checks also passed.

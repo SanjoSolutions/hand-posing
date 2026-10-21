@@ -20,7 +20,7 @@ class BlenderSession:
             directory = root / part
             directory.mkdir(parents=True, exist_ok=True)
             self.environment[variable] = str(directory)
-        self.environment["HAND_ON_SURFACE_TEST_ROOT"] = str(root)
+        self.environment["HAND_POSING_TEST_ROOT"] = str(root)
 
     def execute(self, *arguments):
         command = [self.blender, "--background", *arguments]
@@ -64,18 +64,18 @@ def check(blender):
     project = Path(__file__).resolve().parents[1]
     before = retrieve_regular_preferences()
     try:
-        with tempfile.TemporaryDirectory(prefix="hand-on-surface-check-") as directory:
+        with tempfile.TemporaryDirectory(prefix="hand-posing-check-") as directory:
             session = BlenderSession(blender, Path(directory))
             version = session.execute("--version").splitlines()[0]
             archive = build(session, project / "dist")
             session.execute_script('''import os
 from pathlib import Path
 import bpy
-root = Path(os.environ['HAND_ON_SURFACE_TEST_ROOT'])
+root = Path(os.environ['HAND_POSING_TEST_ROOT'])
 assert Path(bpy.utils.user_resource('CONFIG')).resolve() == (root / 'config').resolve()
 repository = root / 'installed'
 repository.mkdir()
-bpy.ops.preferences.extension_repo_add(name='Hand on Surface Test', type='LOCAL', use_custom_directory=True, custom_directory=str(repository))
+bpy.ops.preferences.extension_repo_add(name='Hand Posing Test', type='LOCAL', use_custom_directory=True, custom_directory=str(repository))
 repo = next(repo for repo in bpy.context.preferences.extensions.repos if Path(repo.directory).resolve() == repository.resolve())
 (root / 'repository.txt').write_text(repo.module)
 bpy.ops.wm.save_userpref()
@@ -84,15 +84,15 @@ bpy.ops.wm.save_userpref()
             session.execute("--command", "extension", "install-file", "--repo", repository, "--enable", str(archive))
             session.execute_script(f'''import importlib, runpy
 import bpy
-name = 'bl_ext.{repository}.hand_on_surface'
+name = 'bl_ext.{repository}.hand_posing'
 assert name in bpy.context.preferences.addons
 addon = importlib.import_module(name)
 assert addon.__version__ == '1.0.0'
-runpy.run_path({str(project / 'hand_on_surface/test_hand_on_surface.py')!r}, run_name='__main__')
+runpy.run_path({str(project / 'hand_posing/test_hand_posing.py')!r}, run_name='__main__')
 ''')
             session.execute_script(f'''import addon_utils
 import bpy
-name = 'bl_ext.{repository}.hand_on_surface'
+name = 'bl_ext.{repository}.hand_posing'
 addon_utils.disable(name, default_set=True)
 assert bpy.types.Panel.bl_rna_get_subclass_py('HAND_PT_snap') is None
 assert not hasattr(bpy.types.PoseBone, 'snap_hand_surface')
@@ -100,7 +100,7 @@ assert addon_utils.enable(name, default_set=True) is not None
 bpy.ops.wm.save_userpref()
 ''')
             session.execute_script(f'''import bpy
-assert 'bl_ext.{repository}.hand_on_surface' in bpy.context.preferences.addons
+assert 'bl_ext.{repository}.hand_posing' in bpy.context.preferences.addons
 assert bpy.types.Panel.bl_rna_get_subclass_py('HAND_PT_snap')
 print('PASS: installed extension persists across Blender processes')
 ''')
@@ -111,7 +111,7 @@ print('PASS: installed extension persists across Blender processes')
                       "regular_preferences_preserved": True,
                       "regular_preference_versions": sorted(Path(path).parents[1].name for path in before),
                       "source_files": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-                                       for path in sorted((project / "hand_on_surface").iterdir()) if path.is_file()}}
+                                       for path in sorted((project / "hand_posing").iterdir()) if path.is_file()}}
     finally:
         after = retrieve_regular_preferences()
         if after != before:

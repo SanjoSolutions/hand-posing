@@ -88,7 +88,7 @@ class HAND_OT_snap(bpy.types.Operator):
 
 
 class HAND_PT_snap(bpy.types.Panel):
-    bl_label = "Hand on Surface"
+    bl_label = "Hand Posing"
     bl_idname = "HAND_PT_snap"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"

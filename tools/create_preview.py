@@ -8,7 +8,7 @@ import bpy
 from mathutils import Vector
 
 project = Path(__file__).resolve().parents[1]
-fixture = runpy.run_path(str(project / "hand_on_surface/test_hand_on_surface.py"), run_name="preview_fixture")
+fixture = runpy.run_path(str(project / "hand_posing/test_hand_posing.py"), run_name="preview_fixture")
 addon = fixture["ADDON"]
 addon.register()
 rig, skin = fixture["create_fixture"]()

@@ -14,13 +14,13 @@ from mathutils import Matrix, Vector
 
 def retrieve_addon():
     installed = next((name for name in bpy.context.preferences.addons.keys()
-                      if name.endswith(".hand_on_surface")), None)
+                      if name.endswith(".hand_posing")), None)
     if installed:
         return importlib.import_module(installed)
-    if "hand_on_surface" in sys.modules:
-        return sys.modules["hand_on_surface"]
+    if "hand_posing" in sys.modules:
+        return sys.modules["hand_posing"]
     directory = Path(__file__).resolve().parent
-    specification = importlib.util.spec_from_file_location("hand_on_surface", directory / "__init__.py",
+    specification = importlib.util.spec_from_file_location("hand_posing", directory / "__init__.py",
                                                           submodule_search_locations=[str(directory)])
     addon = importlib.util.module_from_spec(specification)
     sys.modules[specification.name] = addon
@@ -119,7 +119,7 @@ def create_skin(rig):
     return skin
 
 
-class HandOnSurfaceTests(unittest.TestCase):
+class HandPosingTests(unittest.TestCase):
     def setUp(self):
         ADDON.register()
         self.rig, self.skin = create_fixture()
@@ -265,7 +265,7 @@ class HandOnSurfaceTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(HandOnSurfaceTests)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(HandPosingTests)
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     if not result.wasSuccessful():
-        raise RuntimeError("Hand on Surface validation failed")
+        raise RuntimeError("Hand Posing validation failed")

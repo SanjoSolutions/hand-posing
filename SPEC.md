@@ -1,6 +1,6 @@
-# Hand on Surface
+# Hand Posing
 
-Hand on Surface is an open source Blender addon for fitting editable Rigify
+Hand Posing is an open source Blender addon for fitting editable Rigify
 hands to nearby convex mesh surfaces. Palm placement favors the authored hand
 position and rotation. Finger pads follow the surface within calibrated ranges.
 Existing native rig constraints guide the result. Auto Keying records the pose.

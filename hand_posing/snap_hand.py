@@ -513,7 +513,7 @@ class HandSnap:
 
     def snap(self, target, keyframe=False):
         if target is None or target.type != "MESH":
-            raise ValueError("Choose the hand's target mesh in the Hand on Surface panel")
+            raise ValueError("Choose the hand's target mesh in the Hand Posing panel")
         surface = HandSurface(target, self.context.evaluated_depsgraph_get(), self.rig, self.side)
         poses = {bone.name: bone.matrix_basis.copy() for bone in self.retrieve_controls()}
         parent = self.rig.pose.bones[f"upper_arm_parent.{self.side}"]

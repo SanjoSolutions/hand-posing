@@ -1,7 +1,7 @@
 {
   "blender": "Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)",
-  "archive": "hand_on_surface-1.0.0.zip",
-  "sha256": "db3e0a37ffb9ac67353289e0137987cd49b69dcaf460bb9e2c2634e127cc7035",
+  "archive": "hand_posing-1.0.0.zip",
+  "sha256": "1077875fa9fd869a80373dfd0017a540afdc885e27400c340c2891af34f7cf9b",
   "checks": [
     "manifest",
     "archive",
@@ -16,8 +16,8 @@
   ],
   "regular_preferences_preserved": true,
   "source_files": {
-    "__init__.py": "f95d1cbe4c4faf18d9d215df8ef696e20b0bb1f7ccee37f700ae32a483351451",
-    "blender_manifest.toml": "9ddf044f5a1cb1221c1133ae08aaa5c80b2dccccaba01939e20c1c093c504a88",
+    "__init__.py": "4ca575d24642b483ea9e90baccddc5e3438b0f05d076310463d4580a87d8acca",
+    "blender_manifest.toml": "dec0413d85ffa845aa073a3ce53b590cfbc98be132906f35d1102f6629533a93",
     "calibration.py": "febc57869e2fc611163d01731b3e8529776e8014ec7b4b4c279d312feb31da68",
     "convex_hand_snap.py": "88dcf6b25c0b55359147f19bf49a0db7adf6e19823c241041e357d39753c2dbe",
     "hand_surface_clearance.py": "f9316774037f08f17bd598ba8f82d92f38db4f4cacb06f45d40281bdec0c98ef",
@@ -25,8 +25,8 @@
     "resting_hand_rectangle.py": "a45bb865cfef8eae26ae58c8bd8cf44a94372dc91861e6881f2cc9d592474469",
     "rig_binding.py": "a75912510228da1d9d27b037bc8b4691920ccfa98f948f155388af519ad4cef3",
     "skin_finger_refinement.py": "f44f8366cb66e420a7f25ac295132842ce125892c825a84b44c58812e251abb2",
-    "snap_hand.py": "0e9c10c9a50b6c3e1245d2e73c0190dd19046d977197b1adef03057ad85a1e75",
-    "test_hand_on_surface.py": "b475165b5de896220127df7f7cbdbae75921bfc7a07aee43c8570c19f9f7f44a"
+    "snap_hand.py": "15115fc4480041830c678d47482594a0a71e31489548c11b6969386070c604ce",
+    "test_hand_posing.py": "f6d02d66f547880a0a64ae14da01c312f90f4967ea8cdf3c32cb43a248ad7213"
   },
   "verification_date": "2026-10-21",
   "platform": "Windows"

@@ -1,4 +1,4 @@
-# Hand on Surface
+# Hand Posing
 
 Fit a Rigify hand to a nearby mesh surface. The addon adjusts the hand IK control,
 palm, and finger controls. The resulting pose stays editable. Auto Keying records
@@ -14,10 +14,10 @@ see [LICENSE](LICENSE).
 
 ## Install
 
-1. Download or build `hand_on_surface-1.0.0.zip`.
+1. Download or build `hand_posing-1.0.0.zip`.
 2. In Blender, open **Edit > Preferences > Get Extensions**.
 3. Open the menu in the upper right and choose **Install from Disk**.
-4. Select the ZIP and enable **Hand on Surface**.
+4. Select the ZIP and enable **Hand Posing**.
 
 The extension includes its solver and uses Blender's own Python modules.
 Installation supports offline use on Windows, macOS, and Linux.
@@ -25,7 +25,7 @@ Installation supports offline use on Windows, macOS, and Linux.
 ## Use
 
 1. Select a Rigify hand IK or finger control in Pose Mode.
-2. Open **Item > Hand on Surface** in the 3D Viewport sidebar.
+2. Open **Item > Hand Posing** in the 3D Viewport sidebar.
 3. For a new hand, choose **Hand skin** and click
    **Calibrate Hand**. Use a mesh with weighted palm and finger geometry.
 4. Place and rotate the hand IK near the intended contact.
@@ -67,7 +67,7 @@ import importlib
 import bpy
 
 name = next(name for name in bpy.context.preferences.addons.keys()
-            if name.rsplit('.', 1)[-1] == 'hand_on_surface')
+            if name.rsplit('.', 1)[-1] == 'hand_posing')
 addon = importlib.import_module(name)
 rig = bpy.context.object
 solver = addon.retrieve_snap_solver(bpy.context, rig, 'R')
@@ -98,11 +98,11 @@ character, plus synthetic hand fixtures for operator and saved-file workflows.
 Run solver checks directly in an isolated Blender profile:
 
 ```sh
-blender --background --factory-startup --python-exit-code 1 --python hand_on_surface/test_hand_on_surface.py
+blender --background --factory-startup --python-exit-code 1 --python hand_posing/test_hand_posing.py
 ```
 
 The game consumes a pinned snapshot of this package. Develop the solver here,
-then use the game's `scripts/blender/sync_hand_on_surface.py --source PATH` to
+then use the game's `scripts/blender/sync_hand_posing.py --source PATH` to
 refresh that dependency and its checksum record.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and

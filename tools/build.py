@@ -11,7 +11,7 @@ from check import BlenderSession
 
 def build(session, output):
     output.mkdir(parents=True, exist_ok=True)
-    source = Path(__file__).resolve().parents[1] / "hand_on_surface"
+    source = Path(__file__).resolve().parents[1] / "hand_posing"
     session.execute("--command", "extension", "validate", str(source))
     session.execute("--command", "extension", "build", "--source-dir", str(source), "--output-dir", str(output))
     import tomllib
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser.add_argument("--blender", default="blender")
     parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[1] / "dist")
     arguments = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="hand-on-surface-build-") as directory:
+    with tempfile.TemporaryDirectory(prefix="hand-posing-build-") as directory:
         session = BlenderSession(arguments.blender, Path(directory))
         archive = build(session, arguments.output.resolve())
     print(archive)

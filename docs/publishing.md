@@ -4,7 +4,8 @@
 
 Run `python tools/check.py --blender PATH`, then `python tools/build.py --blender
 PATH`. Publish the generated extension ZIP and checksum from `dist/` with a source
-tag matching `hand_on_surface/blender_manifest.toml`. Review the validation report
+tag matching `hand_posing/blender_manifest.toml` (the initial Hand Posing
+release uses `hand-posing-v1.0.0`). Review the validation report
 in `docs/validation.md` and update it for the selected source revision.
 
 The release includes Python source, the extension manifest, and the GPL license.
@@ -13,7 +14,7 @@ Set the repository's public URL in the listing once the repository is published.
 
 ## Listing draft
 
-**Name:** Hand on Surface
+**Name:** Hand Posing
 
 **Summary:** Fit Rigify palms and fingers to nearby mesh surfaces.
 
@@ -24,7 +25,7 @@ Set the repository's public URL in the listing once the repository is published.
 **License:** GNU GPL version 3 or later
 
 **Description:** Select a Rigify hand, calibrate it from the character's skin,
-choose a surface, and snap. Hand on Surface places the palm and fingers while
+choose a surface, and snap. Hand Posing places the palm and fingers while
 keeping the rig controls editable. Auto Keying records the resulting pose.
 Existing Snap Hand calibrations work directly.
 
@@ -33,7 +34,7 @@ nearby locally convex targets. The addon uses Blender's evaluated skin and nativ
 rig constraints. Rig and skin setup plus visual pose review belong to the workflow.
 
 **Installation:** Preferences > Get Extensions > Install from Disk. Select the
-release ZIP and enable Hand on Surface.
+release ZIP and enable Hand Posing.
 
 ## Blender Extensions
 
