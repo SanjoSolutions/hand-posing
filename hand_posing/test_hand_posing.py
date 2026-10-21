@@ -4,6 +4,7 @@
 import importlib
 import importlib.util
 import json
+import math
 from pathlib import Path
 import sys
 import unittest
@@ -183,12 +184,19 @@ class HandPosingTests(unittest.TestCase):
     def test_existing_calibration_and_saved_file_playback(self):
         import tempfile
         hand = self.calibrate("R")
+        bpy.ops.hand.add_finger_group()
+        hand.hand_posing_finger_groups[0].name = "Together"
+        hand.hand_posing_finger_groups[0].fingers = {"f_index", "f_middle"}
         original = hand["Snap Hand Calibration"]
         with tempfile.TemporaryDirectory() as directory:
             bpy.ops.wm.save_as_mainfile(filepath=str(Path(directory) / "example.blend"))
             bpy.ops.wm.open_mainfile(filepath=str(Path(directory) / "example.blend"))
             rig = bpy.data.objects["Example character"]
             self.assertEqual(rig.pose.bones["hand_ik.R"]["Snap Hand Calibration"], original)
+            groups = rig.pose.bones["hand_ik.R"].hand_posing_finger_groups
+            self.assertEqual(groups[0].name, "Together")
+            self.assertEqual(groups[0].fingers, {"f_index", "f_middle"})
+            self.assertEqual(len(rig.pose.bones["hand_ik.L"].hand_posing_finger_groups), 0)
             solver = ADDON.retrieve_snap_solver(bpy.context, rig, "R")
             self.assertEqual(len(solver.calibration["fingers"]), 15)
 
@@ -214,11 +222,169 @@ class HandPosingTests(unittest.TestCase):
                             for first, second in zip(row, other)), .000001)
 
     def test_registration_cycle(self):
+        hand = self.select_hand("R")
+        bpy.ops.hand.add_finger_group()
+        hand.hand_posing_finger_groups[0].fingers = {"thumb", "f_index"}
         ADDON.register()
         ADDON.unregister()
+        self.assertFalse(hasattr(bpy.types.PoseBone, "hand_posing_finger_groups"))
         ADDON.register()
         self.assertTrue(hasattr(bpy.types.PoseBone, "snap_hand_surface"))
         self.assertTrue(bpy.ops.hand.snap.get_rna_type())
+        self.assertEqual(hand.hand_posing_finger_groups[0].fingers, {"thumb", "f_index"})
+
+    def test_group_membership_and_removal(self):
+        hand = self.select_hand("R")
+        self.assertEqual(len(hand.hand_posing_finger_groups), 0)
+        for _index in range(7):
+            self.assertEqual(bpy.ops.hand.add_finger_group(), {"FINISHED"})
+        groups = hand.hand_posing_finger_groups
+        self.assertEqual(len({group.name for group in groups}), 7)
+        groups[0].fingers = {"thumb", "f_index", "f_middle"}
+        groups[1].fingers = {"f_middle", "f_ring", "f_pinky"}
+        self.assertEqual(groups[0].fingers, {"thumb", "f_index"})
+        groups[2].fingers = {"thumb", "f_ring"}
+        self.assertEqual(groups[0].fingers, {"f_index"})
+        self.assertEqual(groups[1].fingers, {"f_middle", "f_pinky"})
+        self.select_hand("L")
+        bpy.ops.hand.add_finger_group()
+        self.rig.pose.bones["hand_ik.L"].hand_posing_finger_groups[0].fingers = {"thumb", "f_ring"}
+        self.assertEqual(groups[2].fingers, {"thumb", "f_ring"})
+        self.select_hand("R")
+        self.assertEqual(bpy.ops.hand.remove_finger_group(index=-1), {"CANCELLED"})
+        self.assertEqual(bpy.ops.hand.remove_finger_group(index=7), {"CANCELLED"})
+        self.assertEqual(bpy.ops.hand.remove_finger_group(index=2), {"FINISHED"})
+        groups[0].fingers = {"thumb", "f_ring"}
+        self.assertEqual(groups[0].fingers, {"thumb", "f_ring"})
+        while groups:
+            bpy.ops.hand.remove_finger_group(index=0)
+        self.assertEqual(len(groups), 0)
+
+    def retrieve_tip_spacing(self, side, first, second):
+        evaluated = self.rig.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        return (evaluated.pose.bones[f"{first}.03.{side}"].tail
+                - evaluated.pose.bones[f"{second}.03.{side}"].tail).length
+
+    def test_grouped_snap_keeps_fingers_close(self):
+        for side in ("L", "R"):
+            with self.subTest(side=side):
+                hand = self.calibrate(side)
+                bpy.ops.object.mode_set(mode="OBJECT")
+                bpy.ops.mesh.primitive_plane_add(size=2, location=(0, 0, .02))
+                target = bpy.context.object
+                target.rotation_euler.x = math.pi
+                bpy.context.view_layer.update()
+                self.select_hand(side)
+                hand.snap_hand_surface = target
+                bpy.ops.hand.snap()
+                pairs = (("f_index", "f_middle"), ("f_ring", "f_pinky"))
+                baseline = [self.retrieve_tip_spacing(side, *pair) for pair in pairs]
+                thumb = self.rig.pose.bones[f"thumb.03.{side}"].matrix_basis.copy()
+                for pair in pairs:
+                    bpy.ops.hand.add_finger_group()
+                    hand.hand_posing_finger_groups[-1].fingers = set(pair)
+                bpy.context.scene.tool_settings.use_keyframe_insert_auto = True
+                self.assertEqual(bpy.ops.hand.snap(), {"FINISHED"})
+                bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
+                for pair, before in zip(pairs, baseline):
+                    after = self.retrieve_tip_spacing(side, *pair)
+                    self.assertLess(after, before * .95)
+                    self.assertGreater(after, .012)
+                self.assertLess(max(abs(a - b) for row, other in zip(
+                    self.rig.pose.bones[f"thumb.03.{side}"].matrix_basis, thumb)
+                    for a, b in zip(row, other)), .0001)
+                solver = ADDON.retrieve_snap_solver(bpy.context, self.rig, side)
+                surface = ADDON.HandSurface(target, bpy.context.evaluated_depsgraph_get(), self.rig, side)
+                refinement = importlib.import_module(ADDON.__name__ + ".skin_finger_refinement")
+                indices = {index for calibration in solver.calibration["fingers"].values()
+                           for index in calibration["skin_vertices"]}
+                gaps = refinement.retrieve_skin_contacts(bpy.context, self.skin, indices, surface)
+                self.assertGreaterEqual(min(gap for gap, _normal, _point in gaps), -.002)
+                action = self.rig.animation_data.action
+                curves = [curve for layer in action.layers for strip in layer.strips
+                          for bag in strip.channelbags for curve in bag.fcurves]
+                bone = self.rig.pose.bones[f"f_index.01.{side}"]
+                path = f'pose.bones["{bone.name}"].rotation_quaternion'
+                self.assertEqual(sum(curve.data_path == path for curve in curves), 4)
+                for curve in (curve for curve in curves if curve.data_path == path):
+                    self.assertAlmostEqual(curve.evaluate(bpy.context.scene.frame_current),
+                                           bone.rotation_quaternion[curve.array_index], places=5)
+
+    def test_empty_and_single_finger_groups_leave_pose_unchanged(self):
+        hand = self.calibrate("R")
+        for members in (set(), {"thumb"}):
+            bpy.ops.hand.add_finger_group()
+            hand.hand_posing_finger_groups[-1].fingers = members
+        original = {bone.name: bone.matrix_basis.copy() for bone in self.rig.pose.bones}
+        grouping = importlib.import_module(ADDON.__name__ + ".finger_groups")
+        grouping.fit_finger_groups(ADDON.retrieve_snap_solver(bpy.context, self.rig, "R"), None)
+        for bone in self.rig.pose.bones:
+            self.assertEqual(bone.matrix_basis, original[bone.name])
+
+    def assert_group_bounds(self, solver):
+        snap_module = importlib.import_module(ADDON.__name__ + ".snap_hand")
+        evaluated = self.rig.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        for name, calibration in solver.calibration["fingers"].items():
+            rotation = (snap_module.retrieve_matrix(calibration["rest"]).inverted()
+                        @ evaluated.pose.bones[calibration["parent"]].matrix.inverted()
+                        @ evaluated.pose.bones[name].matrix).to_euler("XYZ")
+            for angle, (lower, upper) in zip(rotation, calibration["bounds"]):
+                self.assertGreaterEqual(angle, lower - .002, name)
+                self.assertLessEqual(angle, upper + .002, name)
+
+    def test_groups_on_curved_surface_with_thumb(self):
+        hand = self.calibrate("R")
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=64, ring_count=32, radius=1,
+                                            location=(.2, .1, 1.02))
+        target = bpy.context.object
+        solver = ADDON.retrieve_snap_solver(bpy.context, self.rig, "R")
+        solver.snap(target)
+        pairs = (("f_index", "f_middle"), ("f_middle", "f_ring"), ("f_pinky", "thumb"))
+        before = sum(self.retrieve_tip_spacing("R", *pair) for pair in pairs)
+        self.select_hand("R")
+        for members in ({"f_index", "f_middle", "f_ring"}, {"f_pinky", "thumb"}):
+            bpy.ops.hand.add_finger_group()
+            hand.hand_posing_finger_groups[-1].fingers = members
+        solver.snap(target)
+        after = sum(self.retrieve_tip_spacing("R", *pair) for pair in pairs)
+        self.assertLess(after, before * .97)
+        self.assert_group_bounds(solver)
+        surface = ADDON.HandSurface(target, bpy.context.evaluated_depsgraph_get(), self.rig, "R")
+        refinement = importlib.import_module(ADDON.__name__ + ".skin_finger_refinement")
+        indices = {index for calibration in solver.calibration["fingers"].values()
+                   for index in calibration["skin_vertices"]}
+        gaps = refinement.retrieve_skin_contacts(bpy.context, self.skin, indices, surface)
+        self.assertGreaterEqual(min(gap for gap, _normal, _point in gaps), -.002)
+
+    def test_legacy_group_fit_and_failure_rollback(self):
+        hand = self.calibrate("R")
+        calibration = json.loads(hand["Snap Hand Calibration"])
+        for joint in calibration["fingers"].values():
+            joint.pop("skin_vertices")
+        calibration.pop("contact_geometry")
+        hand["Snap Hand Calibration"] = json.dumps(calibration)
+        bpy.ops.hand.add_finger_group()
+        hand.hand_posing_finger_groups[0].fingers = {"f_index", "f_middle"}
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.mesh.primitive_plane_add(size=2, location=(0, 0, .02))
+        target = bpy.context.object
+        target.rotation_euler.x = math.pi
+        bpy.context.view_layer.update()
+        solver = ADDON.HandSnap(bpy.context, self.rig, "R")
+        solver.snap(target)
+        self.assertLess(self.retrieve_tip_spacing("R", "f_index", "f_middle"), .017)
+        self.assert_group_bounds(solver)
+        original = {bone.name: bone.matrix_basis.copy() for bone in solver.retrieve_controls()}
+        grouping = importlib.import_module(ADDON.__name__ + ".finger_groups")
+        from unittest.mock import patch
+        with patch.object(grouping, "fit_finger_groups", side_effect=ValueError("Group fit failed")):
+            with self.assertRaisesRegex(ValueError, "Group fit failed"):
+                solver.snap(target, keyframe=True)
+        for bone in solver.retrieve_controls():
+            self.assertLess(max(abs(a - b) for row, other in zip(bone.matrix_basis, original[bone.name])
+                                for a, b in zip(row, other)), .000001)
+        self.assertIsNone(self.rig.animation_data)
 
     def test_generated_rigify_hand_calibration(self):
         import addon_utils
@@ -251,6 +417,13 @@ class HandPosingTests(unittest.TestCase):
             target.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(normal)
             bpy.context.view_layer.update()
             solver.snap(target)
+            before = self.retrieve_tip_spacing(side, "f_index", "f_middle")
+            self.select_hand(side)
+            bpy.ops.hand.add_finger_group()
+            hand.hand_posing_finger_groups[0].fingers = {"f_index", "f_middle"}
+            solver.snap(target)
+            self.assertLess(self.retrieve_tip_spacing(side, "f_index", "f_middle"), before)
+            self.assert_group_bounds(solver)
             surface = ADDON.HandSurface(target, bpy.context.evaluated_depsgraph_get(), self.rig, side)
             self.assertLess(solver.skin.retrieve_penetration(surface), .002)
             evaluated = self.skin.evaluated_get(bpy.context.evaluated_depsgraph_get())

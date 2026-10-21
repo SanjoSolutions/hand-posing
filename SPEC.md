@@ -9,6 +9,12 @@ Users can calibrate either hand from a skinned mesh, select a target surface,
 and snap the hand through the sidebar or operator search. Existing Snap Hand
 calibrations continue to work. Saved calibrations belong to the Blender file.
 
+Users can create, edit, and remove any number of finger groups for each hand,
+including no groups. Each finger, including the thumb, belongs to at most one
+group. Grouped fingers stay close together when snapping within the surface and
+joint constraints. Groups belong to the Blender file. Ungrouped fingers keep
+their independent fitting behavior.
+
 The addon works independently of the game that originally supplied its solver.
 The game uses the addon as its shared implementation.
 

@@ -96,18 +96,21 @@ name = 'bl_ext.{repository}.hand_posing'
 addon_utils.disable(name, default_set=True)
 assert bpy.types.Panel.bl_rna_get_subclass_py('HAND_PT_snap') is None
 assert not hasattr(bpy.types.PoseBone, 'snap_hand_surface')
+assert not hasattr(bpy.types.PoseBone, 'hand_posing_finger_groups')
 assert addon_utils.enable(name, default_set=True) is not None
 bpy.ops.wm.save_userpref()
 ''')
             session.execute_script(f'''import bpy
 assert 'bl_ext.{repository}.hand_posing' in bpy.context.preferences.addons
 assert bpy.types.Panel.bl_rna_get_subclass_py('HAND_PT_snap')
+assert hasattr(bpy.types.PoseBone, 'hand_posing_finger_groups')
 print('PASS: installed extension persists across Blender processes')
 ''')
             report = {"blender": version, "archive": archive.name,
                       "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
                       "checks": ["manifest", "archive", "install", "calibrate", "snap", "auto_key",
-                                 "saved_calibration", "registration", "disable_enable", "fresh_process"],
+                                 "saved_calibration", "finger_groups", "saved_groups", "grouped_contact",
+                                 "registration", "disable_enable", "fresh_process"],
                       "regular_preferences_preserved": True,
                       "regular_preference_versions": sorted(Path(path).parents[1].name for path in before),
                       "source_files": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()

@@ -523,6 +523,8 @@ class HandSnap:
             self.rig.update_tag()
             self.context.view_layer.update()
             self.fit_hand(surface)
+            from .finger_groups import fit_finger_groups
+            fit_finger_groups(self, surface)
             if keyframe:
                 parent.keyframe_insert('["IK_FK"]', group=parent.name)
                 for name in poses:

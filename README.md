@@ -37,6 +37,13 @@ Installation supports offline use on Windows, macOS, and Linux.
 6. Refine the pose with the rig controls and insert keys. Use Blender's Undo to
    restore a prior pose.
 
+In **Finger groups**, click **Add Group**, name the group, and select its fingers.
+Selecting a finger moves it out of any other group on that hand. **Snap Hand**
+keeps members close together within the surface and joint limits. Remove a group
+with its **X** button, or deselect fingers to fit them independently. Groups are
+optional, separate for each hand, and saved in the Blender file. Empty groups and
+groups with one finger do not change the pose.
+
 Calibrate each hand once and save the Blender file. Existing `Snap Hand
 Calibration` data works directly. Calibrating again replaces that hand's stored
 contact measurements. Capture after changes to hand proportions or skin geometry.
