@@ -6,6 +6,11 @@
   "source": "https://static.makehumancommunity.org/mpfb/faq/why_use.html",
   "blender": "5.2.1 LTS",
   "addon_version": "0.1.0",
+  "image_orientation": {
+    "icon.png": "Fingers pointing up",
+    "preview.png": "Fingers pointing up",
+    "preview-contact.png": "Fingers pointing left"
+  },
   "thumb_refinement": {
     "manual_control_refinement": true,
     "spread_before_degrees": 94.29460728464,
@@ -216,7 +221,7 @@
         "rest_bend_adjustment": 0.030371571891009808
       }
     ],
-    "maximum_limit_error_radians": 1.1920928955078125e-07,
+    "maximum_limit_error_radians": 1.1920928955078125E-07,
     "evaluated_limits_passed": true
   }
 }

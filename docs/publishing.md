@@ -5,9 +5,9 @@
 As of October 21, 2026, the GitHub 0.1.0 release is public. The official Blender
 Extensions listing exists as a draft at
 https://extensions.blender.org/add-ons/hand-posing/draft/ and has not been
-submitted for moderation. The corrected adult female MPFB previews are prepared
-locally; replacing the draft images and submitting the listing still require
-browser file-upload permission.
+submitted for moderation. The textured adult female MPFB previews have been
+uploaded and saved in the draft. The gallery preview points left; the icon and
+featured image remain upright. Submission waits for the user's review.
 
 ## Release package
 

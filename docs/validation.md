@@ -29,6 +29,8 @@ and snapped the right hand to the preview surface. The thumb was then refined
 with the editable control from approximately 94 degrees to a relaxed 35-degree
 spread. The camera frames the genuine
 MPFB thumb and fingers. See [provenance](preview-provenance.json).
+The gallery preview points left; the icon and featured image retain their upright
+orientation.
 The model retains its UV coordinates and uses MPFB's MakeSkin material with the
 MakeHuman female diffuse texture and MPFB's fingernail roughness mask.
 The preview also applies the woman's joint-limit policy from

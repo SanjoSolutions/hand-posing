@@ -225,6 +225,10 @@ def render(name, offset, square=False):
     view = offset.normalized()
     right = heading.cross(view).normalized()
     up = view.cross(right).normalized()
+    if name == 'preview-contact.png':
+        # Only the gallery preview points left; the icon and featured image stay upright.
+        right, up = -up, right
+        assert heading.dot(right) < 0, 'Gallery preview fingers must point left'
     xs = [(point - center).dot(right) for point in points]
     ys = [(point - center).dot(up) for point in points]
     framed = center + right * ((min(xs) + max(xs)) / 2) + up * ((min(ys) + max(ys)) / 2)
@@ -244,6 +248,9 @@ report = {'model': 'Adult female MPFB core basemesh', 'asset_license': 'CC0-1.0'
           'side': 'R', 'rendered_hand_vertices': len(points),
           'source': 'https://static.makehumancommunity.org/mpfb/faq/why_use.html',
           'blender': bpy.app.version_string, 'addon_version': addon.__version__}
+report['image_orientation'] = {'icon.png': 'Fingers pointing up',
+                               'preview.png': 'Fingers pointing up',
+                               'preview-contact.png': 'Fingers pointing left'}
 report['thumb_refinement'] = {'manual_control_refinement': True, 'spread_before_degrees': spread_before,
                               'spread_after_degrees': spread_after}
 if arguments.skin_mhmat:
