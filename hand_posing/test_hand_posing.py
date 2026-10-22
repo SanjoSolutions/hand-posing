@@ -293,6 +293,32 @@ class HandPosingTests(unittest.TestCase):
                 for bone in self.rig.pose.bones:
                     self.assertEqual(bone.matrix_basis, posed[bone.name], bone.name)
 
+    def test_adding_group_members_bounds_scene_updates(self):
+        from unittest.mock import patch
+        for calibrated in (False, True):
+            with self.subTest(calibrated=calibrated):
+                hand = self.calibrate("R") if calibrated else self.select_hand("L")
+                side = hand.name.rsplit(".", 1)[-1]
+                bpy.ops.hand.add_finger_group()
+                group = hand.hand_posing_finger_groups[0]
+                group.fingers = {"f_ring"}
+                original = {bone.name: bone.matrix_basis.copy() for bone in self.rig.pose.bones}
+                before = self.retrieve_tip_spacing(side, "f_ring", "f_pinky")
+                for finger in ("f_pinky", "f_middle", "thumb"):
+                    with patch.object(ADDON.HandSnap, "place_finger", autospec=True,
+                                      side_effect=ADDON.HandSnap.place_finger) as place:
+                        group.fingers = group.fingers | {finger}
+                    self.assertEqual(hand.hand_posing_group_error, "")
+                    # At most four validated poses; search trials must not
+                    # update the scene. This fixture needs one update per joint.
+                    self.assertLessEqual(place.call_count, 4 * 3 * len(group.fingers))
+                    if finger == "f_pinky":
+                        self.assertLess(self.retrieve_tip_spacing(side, "f_ring", "f_pinky"), before * .95)
+                for bone in self.rig.pose.bones:
+                    if not any(bone.name == f"{finger}.{segment:02}.{side}"
+                               for finger in group.fingers for segment in (1, 2, 3)):
+                        self.assertEqual(bone.matrix_basis, original[bone.name], bone.name)
+
     def test_immediate_group_preserves_contact_and_auto_keys_only_members(self):
         hand = self.calibrate("R")
         bpy.ops.object.mode_set(mode="OBJECT")

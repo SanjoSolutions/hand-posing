@@ -34,6 +34,7 @@ class FingerGroupFit:
                            @ evaluated.pose.bones[name].matrix).to_euler("XYZ")
                           for name, calibration in self.chain]
         self.applied = None
+        self.preview = None
         self.radii = {}
         mesh = self.skin.evaluated_get(snap.context.evaluated_depsgraph_get()) if self.skin else None
         for name, calibration in self.joints:
@@ -58,6 +59,11 @@ class FingerGroupFit:
         self.minimum_gap = min(self.initial_gaps, default=0.)
 
     def apply(self, rotations):
+        if self.preview is not None:
+            for (name, calibration), rotation in zip(self.chain, rotations):
+                self.preview[name] = (self.preview[calibration["parent"]] @ self.rest[name]
+                                      @ rotation.to_matrix().to_4x4())
+            return
         changed = set()
         for index, ((name, calibration), rotation) in enumerate(zip(self.chain, rotations)):
             if (self.applied is None or calibration["parent"] in changed
@@ -70,24 +76,41 @@ class FingerGroupFit:
         self.applied = [rotation.copy() for rotation in rotations]
 
     def retrieve_distances(self):
+        if self.preview is not None and self.indices:
+            gaps = []
+            for point, influences in self.preview_skin:
+                predicted = point.copy()
+                for name, weight, local in influences:
+                    predicted += weight * (self.preview[name] @ local - point)
+                nearest, normal = self.surface.retrieve_nearest(predicted)
+                gaps.append((predicted - nearest).dot(normal))
+            return gaps
         if self.indices:
             return [gap for gap, _normal, _point in retrieve_skin_contacts(
                 self.snap.context, self.skin, self.indices, self.surface)]
-        evaluated = self.snap.rig.evaluated_get(self.snap.context.evaluated_depsgraph_get())
+        matrices = self.retrieve_matrices()
         gaps = []
         for name, calibration in self.chain:
-            matrix = evaluated.matrix_world @ evaluated.pose.bones[name].matrix
+            matrix = matrices[name]
             for sample in calibration["samples"][:4]:
                 point = matrix @ Vector(sample)
                 nearest, normal = self.surface.retrieve_nearest(point)
                 gaps.append((point - nearest).dot(normal))
         return gaps
 
-    def retrieve_spacing_cost(self):
+    def retrieve_matrices(self):
+        if self.preview is not None:
+            return self.preview
         evaluated = self.snap.rig.evaluated_get(self.snap.context.evaluated_depsgraph_get())
+        names = {name for name, _calibration in self.joints}
+        names.update(calibration["parent"] for _name, calibration in self.chain)
+        return {name: evaluated.matrix_world @ evaluated.pose.bones[name].matrix for name in names}
+
+    def retrieve_spacing_cost(self):
+        matrices = self.retrieve_matrices()
         points = {}
         for name, calibration in self.joints:
-            matrix = evaluated.matrix_world @ evaluated.pose.bones[name].matrix
+            matrix = matrices[name]
             points.setdefault(calibration["finger"], []).extend(
                 (matrix @ Vector((0, sample[1], 0)), self.radii[name])
                 for sample in calibration["samples"][:4])
@@ -106,6 +129,9 @@ class FingerGroupFit:
 
     def retrieve_cost(self, rotations):
         self.apply(rotations)
+        return self.score(rotations)
+
+    def score(self, rotations):
         penetration = excess = contact = 0.
         if self.surface:
             gaps = self.retrieve_distances()
@@ -129,8 +155,58 @@ class FingerGroupFit:
         directions = [[(index, 0, 1) for index, (_name, calibration) in enumerate(self.chain)
                        if calibration["finger"] == finger] for finger in sorted(self.members)]
         search = JointRotationSearch(self.comforts, self.retrieve_cost, directions)
+        if self.preserve_pose:
+            self.fit_edit(search)
+            return
         rotations = search.refine(self.rotations)
         self.apply(rotations)
+
+    def fit_edit(self, search):
+        """Search a local hand snapshot, then validate a bounded number of real poses.
+
+        Trial rotations must not evaluate the entire character and scene. Skin
+        predictions use the current evaluated vertices and their deform weights;
+        native constraints and modifiers are checked on the final evaluated pose.
+        """
+        poses = {name: self.snap.rig.pose.bones[name].matrix_basis.copy() for name, _ in self.chain}
+        matrices = self.retrieve_matrices()
+        initial_spacing = self.retrieve_spacing_cost()
+        initial_cost = self.score(self.rotations)
+        self.preview_skin = []
+        if self.indices and self.surface:
+            mesh = self.skin.evaluated_get(self.snap.context.evaluated_depsgraph_get())
+            groups = {self.skin.vertex_groups["DEF-" + name].index: name for name, _ in self.chain
+                      if "DEF-" + name in self.skin.vertex_groups}
+            inverses = {name: matrices[name].inverted() for name, _ in self.chain}
+            for index in self.indices:
+                vertex = mesh.data.vertices[index]
+                point = mesh.matrix_world @ vertex.co
+                weights = [(groups[weight.group], weight.weight) for weight in vertex.groups
+                           if weight.group in groups]
+                total = max(1., sum(weight for _name, weight in weights))
+                self.preview_skin.append((point, [(name, weight / total, inverses[name] @ point)
+                                                  for name, weight in weights]))
+        self.preview = matrices
+        try:
+            rotations = search.refine(self.rotations)
+        finally:
+            self.preview = None
+        # Predictions cannot reproduce every rig constraint or skin modifier.
+        # Back off if the actual result worsens spacing or surface clearance.
+        for factor in (1., .5, .25, .125):
+            candidate = [original.copy() for original in self.rotations]
+            for rotation, original, desired in zip(candidate, self.rotations, rotations):
+                for axis in range(3):
+                    rotation[axis] = original[axis] + factor * (desired[axis] - original[axis])
+            candidate = [comfort.clamp(rotation) for comfort, rotation in zip(self.comforts, candidate)]
+            self.apply(candidate)
+            if self.retrieve_spacing_cost() < initial_spacing and self.score(candidate) < initial_cost:
+                if not self.surface or min(self.retrieve_distances()) >= min(self.minimum_gap, .001) - .00001:
+                    return
+        for name, pose in poses.items():
+            self.snap.rig.pose.bones[name].matrix_basis = pose
+        self.snap.rig.update_tag()
+        self.snap.context.view_layer.update()
 
 
 def fit_finger_groups(snap, surface, memberships=None, preserve_pose=False):

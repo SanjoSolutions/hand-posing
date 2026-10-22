@@ -17,6 +17,8 @@ and unrelated fingers keep their pose. Grouping respects joint constraints and
 any selected surface, and Auto Keying records the changed controls. Groups also
 apply when snapping and belong to the Blender file. Ungrouped fingers keep their
 independent fitting behavior.
+Adding or removing group members keeps Blender responsive, including in scenes
+with complete characters and skinned meshes.
 
 Users can create, edit, and remove follow relationships between bones, including
 bones on different armatures. In each relationship, bone A keeps pointing at

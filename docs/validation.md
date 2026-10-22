@@ -1,5 +1,20 @@
 # Validation
 
+Finger group responsiveness was verified on October 22, 2026 with Blender 5.2.1
+LTS. The isolated package check passed all 25 workflow tests, installation,
+disable/enable, and fresh-process checks, preserving regular preferences.
+The added regression exercises adding a second, third, and fourth member,
+including the thumb, with and without calibration. It bounds native scene
+updates and checks closer spacing and unchanged unrelated controls.
+
+A separate background process loaded the existing character scene and added
+the pinky to a right-hand ring-finger group. Profiling measured 68.65 seconds
+and 1,644 native scene updates before the fix, versus 0.82 seconds and six
+updates afterward. Tip spacing decreased from 45.1 mm to 22.0 mm and unrelated
+controls remained unchanged. Timing depends on the scene and machine. Trial
+poses now use a local hand snapshot; the accepted pose is checked against
+evaluated rig constraints and skin clearance. The original scene was not saved.
+
 Verified on Windows with Blender 5.2.1 LTS on October 21, 2026.
 
 `python tools/check.py --blender PATH` passed from the standalone checkout. It
