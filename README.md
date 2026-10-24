@@ -18,7 +18,7 @@ see [LICENSE](LICENSE).
 
 ## Install
 
-1. Download or build `hand_posing-0.1.0.zip`.
+1. Download or build `hand_posing-0.1.1.zip`.
 2. In Blender, open **Edit > Preferences > Get Extensions**.
 3. Open the menu in the upper right and choose **Install from Disk**.
 4. Select the ZIP and enable **Hand Posing**.
@@ -96,6 +96,8 @@ The check command creates a temporary Blender profile, validates and builds the
 extension, installs the ZIP, reopens Blender, exercises generated hands, and
 disables and enables the extension. It compares the regular preferences file
 before and after. `dist/` receives the validated ZIP and a SHA-256 checksum.
+It also checks the ZIP's exact runtime file list and exercises Blender's reload
+routine twice, followed by the hand workflows with the refreshed modules.
 The suite includes calibration and snapping on a freshly generated Rigify
 character, plus synthetic hand fixtures for operator and saved-file workflows.
 

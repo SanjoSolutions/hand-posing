@@ -121,7 +121,8 @@ def create_skin(rig):
 
 class HandPosingTests(unittest.TestCase):
     def setUp(self):
-        ADDON.register()
+        if bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap") is None:
+            ADDON.register()
         self.rig, self.skin = create_fixture()
 
     def select_hand(self, side):
@@ -182,13 +183,20 @@ class HandPosingTests(unittest.TestCase):
 
     def test_existing_calibration_and_saved_file_playback(self):
         import tempfile
+        from unittest.mock import patch
         hand = self.calibrate("R")
         original = hand["Snap Hand Calibration"]
+        skin_name = self.skin.name
         with tempfile.TemporaryDirectory() as directory:
             bpy.ops.wm.save_as_mainfile(filepath=str(Path(directory) / "example.blend"))
-            bpy.ops.wm.open_mainfile(filepath=str(Path(directory) / "example.blend"))
+            with patch.object(ADDON, "register") as registration:
+                bpy.ops.wm.open_mainfile(filepath=str(Path(directory) / "example.blend"))
+            registration.assert_not_called()
             rig = bpy.data.objects["Example character"]
             self.assertEqual(rig.pose.bones["hand_ik.R"]["Snap Hand Calibration"], original)
+            self.assertIs(bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap"), ADDON.HAND_PT_snap)
+            self.assertTrue(bpy.ops.hand.snap.get_rna_type())
+            self.assertEqual(rig.pose.bones["hand_ik.R"].hand_on_surface_skin, bpy.data.objects[skin_name])
             solver = ADDON.retrieve_snap_solver(bpy.context, rig, "R")
             self.assertEqual(len(solver.calibration["fingers"]), 15)
 
@@ -214,8 +222,10 @@ class HandPosingTests(unittest.TestCase):
                             for first, second in zip(row, other)), .000001)
 
     def test_registration_cycle(self):
-        ADDON.register()
         ADDON.unregister()
+        self.assertIsNone(bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap"))
+        self.assertFalse(hasattr(bpy.types.PoseBone, "snap_hand_surface"))
+        self.assertFalse(hasattr(bpy.types.PoseBone, "hand_on_surface_skin"))
         ADDON.register()
         self.assertTrue(hasattr(bpy.types.PoseBone, "snap_hand_surface"))
         self.assertTrue(bpy.ops.hand.snap.get_rna_type())

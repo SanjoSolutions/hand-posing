@@ -30,3 +30,8 @@ The preview uses an MPFB skin texture and material so that fingernails and skin
 detail are clearly visible.
 The gallery preview shows the fingers pointing left. The icon and featured image
 keep their upright orientation.
+
+The addon supports Blender's Reload Scripts command and remains usable when
+opening saved files or disabling and enabling the extension. The distributed
+package contains only runtime sources, its manifest, and license. Tests and
+development tools remain in the source repository.

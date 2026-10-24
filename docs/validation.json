@@ -1,23 +1,84 @@
 {
   "blender": "Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)",
-  "archive": "hand_posing-0.1.0.zip",
-  "sha256": "9fd15d4c2ef6e52d0ffc0a947e80cfe7ad8aa82a95a2c1af85a6d860ff0ad323",
+  "archive": "hand_posing-0.1.1.zip",
+  "sha256": "7d97fa34df99a65b94bfb08bbcbddc8d921a3f7c5403b1376783269c03b909ce",
   "checks": [
     "manifest",
     "archive",
+    "runtime_files_only",
+    "review_package_audit",
     "install",
     "calibrate",
     "snap",
     "auto_key",
     "saved_calibration",
     "registration",
+    "reload_scripts",
+    "workflows_after_reload",
     "disable_enable",
     "fresh_process"
   ],
+  "review_points": {
+    "1": {
+      "status": "passed",
+      "evidence": "Two reload cycles refresh all seven submodules, public and dependent references; six workflows pass before and after reload"
+    },
+    "2": {
+      "status": "passed",
+      "evidence": "Exact runtime-only ZIP file list; development helpers absent from all shipped Python sources"
+    },
+    "3": {
+      "status": "passed",
+      "evidence": "No restore_interface or load_post registration; saved-file reopening does not call register and retains the panel, operator, calibration, and skin pointer"
+    },
+    "4": {
+      "status": "passed",
+      "evidence": "Only __init__.py defines register/unregister; no runtime source calls these entry points"
+    }
+  },
+  "package_review": {
+    "files": [
+      "LICENSE",
+      "__init__.py",
+      "blender_manifest.toml",
+      "calibration.py",
+      "convex_hand_snap.py",
+      "hand_surface_clearance.py",
+      "resting_hand_rectangle.py",
+      "rig_binding.py",
+      "skin_finger_refinement.py",
+      "snap_hand.py"
+    ],
+    "python_files": [
+      "__init__.py",
+      "calibration.py",
+      "convex_hand_snap.py",
+      "hand_surface_clearance.py",
+      "resting_hand_rectangle.py",
+      "rig_binding.py",
+      "skin_finger_refinement.py",
+      "snap_hand.py"
+    ],
+    "development_helpers_absent": true,
+    "file_load_registration_absent": true,
+    "lifecycle_entry_points": [
+      "__init__.py:register",
+      "__init__.py:unregister"
+    ]
+  },
   "regular_preferences_preserved": true,
+  "regular_preference_versions": [
+    "2.92",
+    "2.93",
+    "3.0",
+    "3.6",
+    "4.1",
+    "4.3",
+    "5.2"
+  ],
   "source_files": {
-    "__init__.py": "84a46698bacc53899b208e6a03f0d260bd0cf90a11bafba42a3567bb1605d62d",
-    "blender_manifest.toml": "01173d7e9c327ab6fed132deba2a434589ce526cbe5c41a7106a5dbe1c4ef6b1",
+    "__init__.py": "14752c6cdb3ea2b8110900512b7b91737f470750b881b225e9c63c0c3669885e",
+    "blender_manifest.toml": "2d13091bd6afe2df03687dafd278b1a0044ab935df7fb0b7706c1f4b8a1a09c4",
     "calibration.py": "febc57869e2fc611163d01731b3e8529776e8014ec7b4b4c279d312feb31da68",
     "convex_hand_snap.py": "88dcf6b25c0b55359147f19bf49a0db7adf6e19823c241041e357d39753c2dbe",
     "hand_surface_clearance.py": "f9316774037f08f17bd598ba8f82d92f38db4f4cacb06f45d40281bdec0c98ef",
@@ -25,9 +86,9 @@
     "resting_hand_rectangle.py": "a45bb865cfef8eae26ae58c8bd8cf44a94372dc91861e6881f2cc9d592474469",
     "rig_binding.py": "a75912510228da1d9d27b037bc8b4691920ccfa98f948f155388af519ad4cef3",
     "skin_finger_refinement.py": "f44f8366cb66e420a7f25ac295132842ce125892c825a84b44c58812e251abb2",
-    "snap_hand.py": "15115fc4480041830c678d47482594a0a71e31489548c11b6969386070c604ce",
-    "test_hand_posing.py": "f6d02d66f547880a0a64ae14da01c312f90f4967ea8cdf3c32cb43a248ad7213"
+    "snap_hand.py": "86cf5f1b6120f56089a944a8188fbd57f12ed358d19c1bbcbf0b5f3c2a140ed8",
+    "test_hand_posing.py": "86c0c8b0ff2180f9e9b3d987b65939135deadf62c7bf79564034e12ad1620491"
   },
-  "verification_date": "2026-10-21",
+  "verification_date": "2026-10-24",
   "platform": "Windows"
 }

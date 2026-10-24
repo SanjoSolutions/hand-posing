@@ -5,8 +5,16 @@ import argparse
 import hashlib
 from pathlib import Path
 import tempfile
+import zipfile
 
 from check import BlenderSession
+
+
+RUNTIME_FILES = {
+    "__init__.py", "blender_manifest.toml", "LICENSE", "calibration.py",
+    "snap_hand.py", "rig_binding.py", "resting_hand_rectangle.py",
+    "convex_hand_snap.py", "hand_surface_clearance.py", "skin_finger_refinement.py",
+}
 
 
 def build(session, output):
@@ -18,6 +26,11 @@ def build(session, output):
     manifest = tomllib.loads((source / "blender_manifest.toml").read_text())
     archive = output / f"{manifest['id']}-{manifest['version']}.zip"
     session.execute("--command", "extension", "validate", str(archive))
+    with zipfile.ZipFile(archive) as package:
+        actual = set(package.namelist())
+    if actual != RUNTIME_FILES:
+        raise RuntimeError(f"Unexpected package contents: extra={actual - RUNTIME_FILES}, "
+                           f"missing={RUNTIME_FILES - actual}")
     checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
     archive.with_suffix(".zip.sha256").write_text(f"{checksum}  {archive.name}\n", encoding="utf-8")
     return archive

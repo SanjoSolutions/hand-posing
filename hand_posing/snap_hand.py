@@ -629,8 +629,3 @@ def retrieve_selected_hand(context):
         if bone.name.startswith(("hand_", "f_index", "f_middle", "f_ring", "f_pinky", "thumb", "palm")) and hand and HandSnap.calibration_property in hand:
             return rig, side
     return None
-
-
-def register():
-    from . import register as register_addon
-    register_addon()
