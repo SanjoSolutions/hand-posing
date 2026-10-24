@@ -1,19 +1,18 @@
 # Validation
 
-Finger group responsiveness was verified on October 22, 2026 with Blender 5.2.1
-LTS. The isolated package check passed all 25 workflow tests, installation,
-disable/enable, and fresh-process checks, preserving regular preferences.
-The added regression exercises adding a second, third, and fourth member,
-including the thumb, with and without calibration. It bounds native scene
-updates and checks closer spacing and unchanged unrelated controls.
+## Main merge verification
 
-A separate background process loaded the existing character scene and added
-the pinky to a right-hand ring-finger group. Profiling measured 68.65 seconds
-and 1,644 native scene updates before the fix, versus 0.82 seconds and six
-updates afterward. Tip spacing decreased from 45.1 mm to 22.0 mm and unrelated
-controls remained unchanged. Timing depends on the scene and machine. Trial
-poses now use a local hand snapshot; the accepted pose is checked against
-evaluated rig constraints and skin clearance. The original scene was not saved.
+The merge of `blender-org-extension` into main passed the isolated package
+check on October 24, 2026 with Blender 5.2.1 LTS. All 25 workflow tests passed
+before and after two reload cycles, including finger groups and follow
+relationships. Reload checks cover all nine runtime submodules, refreshed
+dependent references, and registration of the finger-group data and both panels.
+Installation, disable/enable, fresh-process startup, and preference preservation
+also passed. [`validation.json`](validation.json) records this main integration
+run; its package is kept separately under `dist/main/`.
+
+The Blender Extensions submission remains the ten-file ZIP from the
+`hand-posing-v0.1.1` tag on `blender-org-extension`, described below.
 
 ## Blender Extensions review revision
 
@@ -39,13 +38,30 @@ handlers. No browser interface or Playwright tests apply to this native addon.
 | Runtime-only package | Manifest and ZIP validation pass; the ZIP contains exactly eight Python files, the manifest, and license |
 | User preferences | Regular preferences retain their original hashes |
 
-The revised `hand_posing-0.1.0.zip` has SHA-256
-`f39acdce26a0976c04d483e16226de5e0750a7b5d99db5e9e6e42c30c2847691`.
-[`validation.json`](validation.json) records this run's source hashes and checks.
+The revised `hand_posing-0.1.1.zip` has SHA-256
+`5108cecf10c295688c3ce9728063d37c78e749bf51b1e49e0b971916fd8c27c6`.
+The submission copy is kept in `dist/blender-org-extension/` and comes only
+from the tagged `blender-org-extension` branch.
+[`validation-blender-org-extension.json`](validation-blender-org-extension.json) records this run's source hashes and checks.
 This verification covers the standalone addon; it does not rerun the game's
 dependency checks or a hosted Linux CI job. The package has not been resubmitted.
 
-## Earlier release validation
+## Earlier main validation
+
+Finger group responsiveness was verified on October 22, 2026 with Blender 5.2.1
+LTS. The isolated package check passed all 25 workflow tests, installation,
+disable/enable, and fresh-process checks, preserving regular preferences.
+The added regression exercises adding a second, third, and fourth member,
+including the thumb, with and without calibration. It bounds native scene
+updates and checks closer spacing and unchanged unrelated controls.
+
+A separate background process loaded the existing character scene and added
+the pinky to a right-hand ring-finger group. Profiling measured 68.65 seconds
+and 1,644 native scene updates before the fix, versus 0.82 seconds and six
+updates afterward. Tip spacing decreased from 45.1 mm to 22.0 mm and unrelated
+controls remained unchanged. Timing depends on the scene and machine. Trial
+poses now use a local hand snapshot; the accepted pose is checked against
+evaluated rig constraints and skin clearance. The original scene was not saved.
 
 Verified on Windows with Blender 5.2.1 LTS on October 21, 2026.
 
@@ -106,3 +122,19 @@ file retained its original SHA-256 checksum. These constraints belong to the
 demonstration rig; the extension continues to honor the user's existing rig setup.
 
 `tools/create_group_preview.py` renders an immediate-grouping/independent comparison without snapping again and saves
+its editable Blender scene in `.cache/finger-groups/`.
+
+The Hand Posing rename passed all 11 game fast checks, the game setup check,
+and the public dependency workflow check, including the saved helper adapter.
+The extraction's six focused contact checks passed:
+17 base snapping tests, 12 convex snapping tests, five rectangle tests, one
+refinement workflow test, 12 cache tests, and two model placement tests. The game
+setup and public dependency workflow checks also passed.
+
+Runtime verification covers Windows and Linux with Blender 5.2.1 LTS. The
+[Linux CI run](https://github.com/SanjoSolutions/hand-posing/actions/runs/39630909318)
+passed for release source `9d87a6c2db65bba176faecc2d672051529c49fdf`.
+The Windows installation and six public workflow tests were rerun successfully
+during submission preparation on October 21, 2026. Locally
+convex targets, standard Rigify controls, and human-scale geometry define the
+supported scope. Visual pose review remains part of animation authoring.

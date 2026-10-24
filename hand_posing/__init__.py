@@ -35,7 +35,7 @@ from .snap_hand import HandSnap, HandSurface, retrieve_selected_hand, retrieve_s
 
 from .follow_relationships import retrieve_follow, retrieve_follows, set_follow, remove_follow
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 FINGER_ITEMS = tuple((identifier, label, "Move this finger into this group", 1 << index)
                      for index, (identifier, label) in enumerate((

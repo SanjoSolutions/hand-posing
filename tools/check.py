@@ -87,7 +87,7 @@ import bpy
 name = 'bl_ext.{repository}.hand_posing'
 assert name in bpy.context.preferences.addons
 addon = importlib.import_module(name)
-assert addon.__version__ == '0.1.0'
+assert addon.__version__ == '0.1.1'
 runpy.run_path({str(project / 'hand_posing/test_hand_posing.py')!r}, run_name='__main__')
 ''')
             session.execute_script(f'''import importlib

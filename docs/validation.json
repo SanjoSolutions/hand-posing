@@ -1,7 +1,7 @@
 {
   "blender": "Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)",
-  "archive": "hand_posing-0.1.0.zip",
-  "sha256": "f39acdce26a0976c04d483e16226de5e0750a7b5d99db5e9e6e42c30c2847691",
+  "archive": "hand_posing-0.1.1.zip",
+  "sha256": "c457024d7634f4c06844177cda7f8eee783d4ecd5dacebd9fab725eaacb503d5",
   "checks": [
     "manifest",
     "archive",
@@ -11,6 +11,19 @@
     "snap",
     "auto_key",
     "saved_calibration",
+    "finger_groups",
+    "saved_groups",
+    "grouped_contact",
+    "immediate_groups",
+    "unconfigured_groups",
+    "group_auto_key",
+    "follow_offsets",
+    "follow_animation",
+    "follow_cross_armature",
+    "follow_cycles",
+    "follow_edit_remove",
+    "saved_follows",
+    "renamed_follow_bones",
     "registration",
     "reload_scripts",
     "workflows_after_reload",
@@ -28,18 +41,21 @@
     "5.2"
   ],
   "source_files": {
-    "__init__.py": "3e5d93cb3fd86cbab34454714a49a942f7dab1c41edb57cc848cd54ee88c49ed",
-    "blender_manifest.toml": "01173d7e9c327ab6fed132deba2a434589ce526cbe5c41a7106a5dbe1c4ef6b1",
-    "calibration.py": "febc57869e2fc611163d01731b3e8529776e8014ec7b4b4c279d312feb31da68",
+    "__init__.py": "020c321b6944afdb35ee7fcbfedebdc5a37e36a63cde13f8a569b543b768ec1e",
+    "blender_manifest.toml": "2d13091bd6afe2df03687dafd278b1a0044ab935df7fb0b7706c1f4b8a1a09c4",
+    "calibration.py": "a4e6fda41c01302a44cb3e9c8078742b49797f2de3f440ea0ae24f46804fb5ad",
     "convex_hand_snap.py": "88dcf6b25c0b55359147f19bf49a0db7adf6e19823c241041e357d39753c2dbe",
+    "finger_groups.py": "a2900cd4a27400d45b6c1d50c0d9ba5fd43d9b82e170f3d279190491115cafa6",
+    "follow_relationships.py": "9f24999c4e61d9e8c22aa1ad50bf870b4d93752084176f4016f8b8b6277412c5",
     "hand_surface_clearance.py": "f9316774037f08f17bd598ba8f82d92f38db4f4cacb06f45d40281bdec0c98ef",
     "LICENSE": "230184f60bae2feaf244f10a8bac053c8ff33a183bcc365b4d8b876d2b7f4809",
     "resting_hand_rectangle.py": "a45bb865cfef8eae26ae58c8bd8cf44a94372dc91861e6881f2cc9d592474469",
     "rig_binding.py": "a75912510228da1d9d27b037bc8b4691920ccfa98f948f155388af519ad4cef3",
     "skin_finger_refinement.py": "f44f8366cb66e420a7f25ac295132842ce125892c825a84b44c58812e251abb2",
-    "snap_hand.py": "86cf5f1b6120f56089a944a8188fbd57f12ed358d19c1bbcbf0b5f3c2a140ed8",
-    "test_hand_posing.py": "dfbb11c1bac1221b6e4f55db020b990720109680dd40646b02cb04bf5e804e01"
+    "snap_hand.py": "6fb46c78cc73f2136a24867aa0101bc0325a11975e4ee5e7ffcb3d6237d4b313",
+    "test_hand_posing.py": "7e88daab1e88f14ea3e534bdef27147f3dfd61d86a9599b50b27111aedd658b3"
   },
   "verification_date": "2026-10-24",
-  "platform": "Windows"
+  "platform": "Windows",
+  "scope": "main integration"
 }

@@ -18,7 +18,7 @@ see [LICENSE](LICENSE).
 
 ## Install
 
-1. Download or build `hand_posing-0.1.0.zip`.
+1. Download or build `hand_posing-0.1.1.zip`.
 2. In Blender, open **Edit > Preferences > Get Extensions**.
 3. Open the menu in the upper right and choose **Install from Disk**.
 4. Select the ZIP and enable **Hand Posing**.

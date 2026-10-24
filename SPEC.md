@@ -49,7 +49,9 @@ detail are clearly visible.
 The gallery preview shows the fingers pointing left. The icon and featured image
 keep their upright orientation.
 
-The Blender Extensions revision uses the submitted 0.1.0 package as its base.
+The Blender Extensions revision is version 0.1.1 and uses the submitted 0.1.0
+package as its base. Its submission package comes from the tagged
+`blender-org-extension` branch, independently of later features on main.
 The addon supports Blender's Reload Scripts command and remains usable when
 opening saved files or disabling and enabling the extension. The distributed
 package contains only runtime sources, its manifest, and license. Tests and
