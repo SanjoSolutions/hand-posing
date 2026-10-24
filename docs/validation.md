@@ -15,6 +15,38 @@ controls remained unchanged. Timing depends on the scene and machine. Trial
 poses now use a local hand snapshot; the accepted pose is checked against
 evaluated rig constraints and skin clearance. The original scene was not saved.
 
+## Blender Extensions review revision
+
+Verified on Windows with Blender 5.2.1 LTS on October 24, 2026, using
+`python tools/check.py --blender PATH` in an isolated profile.
+The base is the submitted 0.1.0 ZIP, verified byte for byte against
+`hand-posing-v0.1.0`; see [publishing provenance](publishing.md).
+
+All six public workflow tests pass before and after two consecutive reloads.
+The reload check calls `bpy.utils.load_scripts(reload_scripts=True)`, the routine
+Blender's Reload Scripts operator schedules on a UI timer. This lets background
+Blender complete each reload before checking class and function identities,
+dependency references, operators, properties, and the absence of add-on load
+handlers. No browser interface or Playwright tests apply to this native addon.
+
+| Requirement | Evidence |
+| --- | --- |
+| Submitted version as base | Download checksum and all ten package files match the release tag |
+| Module reloading | All seven runtime submodules and the registered panel refresh twice; public and dependent references use the new definitions |
+| Saved-file usability | Calibration, the skin pointer, the panel, and the Snap Hand operator survive reopening a generated file |
+| Extension lifecycle | Unregister removes the panel and both properties; enable, disable, and fresh-process startup pass |
+| Calibration, snapping, and Auto Keying | Six public workflow tests pass twice, including generated Rigify hands and failed-reach restoration |
+| Runtime-only package | Manifest and ZIP validation pass; the ZIP contains exactly eight Python files, the manifest, and license |
+| User preferences | Regular preferences retain their original hashes |
+
+The revised `hand_posing-0.1.0.zip` has SHA-256
+`f39acdce26a0976c04d483e16226de5e0750a7b5d99db5e9e6e42c30c2847691`.
+[`validation.json`](validation.json) records this run's source hashes and checks.
+This verification covers the standalone addon; it does not rerun the game's
+dependency checks or a hosted Linux CI job. The package has not been resubmitted.
+
+## Earlier release validation
+
 Verified on Windows with Blender 5.2.1 LTS on October 21, 2026.
 
 `python tools/check.py --blender PATH` passed from the standalone checkout. It

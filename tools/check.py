@@ -90,6 +90,54 @@ addon = importlib.import_module(name)
 assert addon.__version__ == '0.1.0'
 runpy.run_path({str(project / 'hand_posing/test_hand_posing.py')!r}, run_name='__main__')
 ''')
+            session.execute_script(f'''import importlib
+import bpy
+name = 'bl_ext.{repository}.hand_posing'
+addon = importlib.import_module(name)
+for _cycle in range(2):
+    previous = (addon.HAND_PT_snap, addon.HandCalibration, addon.HandSnap,
+                addon.HandSurface, addon.retrieve_selected_rig,
+                addon.rig_binding.uses_rig, addon.resting_hand_rectangle.RestingHandRectangle,
+                addon.convex_hand_snap.ConvexHandSnap, addon.hand_surface_clearance.ContactSurface,
+                addon.skin_finger_refinement.SkinFingerRefinement,
+                addon.finger_groups.FingerGroupFit, addon.retrieve_follow,
+                addon.HAND_PG_finger_group, addon.HAND_PT_follow_relationships)
+    # Reload Scripts schedules this routine on a UI timer, which background
+    # Blender does not service while executing this test script.
+    bpy.utils.load_scripts(reload_scripts=True)
+    addon = importlib.import_module(name)
+    current = (addon.HAND_PT_snap, addon.HandCalibration, addon.HandSnap,
+               addon.HandSurface, addon.retrieve_selected_rig,
+               addon.rig_binding.uses_rig, addon.resting_hand_rectangle.RestingHandRectangle,
+               addon.convex_hand_snap.ConvexHandSnap, addon.hand_surface_clearance.ContactSurface,
+               addon.skin_finger_refinement.SkinFingerRefinement,
+                addon.finger_groups.FingerGroupFit, addon.retrieve_follow,
+                addon.HAND_PG_finger_group, addon.HAND_PT_follow_relationships)
+    assert all(new is not old for new, old in zip(current, previous))
+    assert bpy.types.Panel.bl_rna_get_subclass_py('HAND_PT_snap') is addon.HAND_PT_snap
+    assert addon.HandCalibration is addon.calibration.HandCalibration
+    assert addon.retrieve_selected_rig is addon.calibration.retrieve_selected_rig
+    assert addon.HandSnap is addon.snap_hand.HandSnap
+    assert addon.convex_hand_snap.HandSnap is addon.HandSnap
+    assert addon.convex_hand_snap.RestingHandRectangle is addon.resting_hand_rectangle.RestingHandRectangle
+    assert addon.skin_finger_refinement.FingerComfort is addon.snap_hand.FingerComfort
+    assert addon.calibration.uses_rig is addon.rig_binding.uses_rig
+    assert addon.retrieve_follow is addon.follow_relationships.retrieve_follow
+    assert addon.finger_groups.HandSnap is addon.HandSnap
+    assert addon.finger_groups.SkinHandSnap is addon.snap_hand.SkinHandSnap
+    assert addon.finger_groups.retrieve_skin_contacts is addon.skin_finger_refinement.retrieve_skin_contacts
+    assert bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_follow_relationships") is addon.HAND_PT_follow_relationships
+    assert bpy.types.PropertyGroup.bl_rna_get_subclass_py("HAND_PG_finger_group") is addon.HAND_PG_finger_group
+    assert bpy.ops.hand.snap.get_rna_type()
+    assert bpy.ops.hand.calibrate_surface.get_rna_type()
+    assert hasattr(bpy.types.PoseBone, 'snap_hand_surface')
+    assert hasattr(bpy.types.PoseBone, 'hand_on_surface_skin')
+    assert not any(getattr(handler, '__module__', '').startswith(name)
+                   for handler in bpy.app.handlers.load_post)
+print('PASS: Blender Reload Scripts refreshes all modules and registrations twice')
+runpy = importlib.import_module('runpy')
+runpy.run_path({str(project / 'hand_posing/test_hand_posing.py')!r}, run_name='__main__')
+''')
             session.execute_script(f'''import addon_utils
 import bpy
 name = 'bl_ext.{repository}.hand_posing'
@@ -111,12 +159,12 @@ print('PASS: installed extension persists across Blender processes')
 ''')
             report = {"blender": version, "archive": archive.name,
                       "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
-                      "checks": ["manifest", "archive", "install", "calibrate", "snap", "auto_key",
+                      "checks": ["manifest", "archive", "runtime_files_only", "install", "calibrate", "snap", "auto_key",
                                  "saved_calibration", "finger_groups", "saved_groups", "grouped_contact",
                                  "immediate_groups", "unconfigured_groups", "group_auto_key",
                                  "follow_offsets", "follow_animation", "follow_cross_armature", "follow_cycles",
                                  "follow_edit_remove", "saved_follows", "renamed_follow_bones",
-                                 "registration", "disable_enable", "fresh_process"],
+                                 "registration", "reload_scripts", "workflows_after_reload", "disable_enable", "fresh_process"],
                       "regular_preferences_preserved": True,
                       "regular_preference_versions": sorted(Path(path).parents[1].name for path in before),
                       "source_files": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()

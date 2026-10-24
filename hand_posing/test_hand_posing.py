@@ -122,7 +122,8 @@ def create_skin(rig):
 
 class HandPosingTests(unittest.TestCase):
     def setUp(self):
-        ADDON.register()
+        if bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap") is None:
+            ADDON.register()
         self.rig, self.skin = create_fixture()
         bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
 
@@ -189,6 +190,7 @@ class HandPosingTests(unittest.TestCase):
         hand.hand_posing_finger_groups[0].name = "Together"
         hand.hand_posing_finger_groups[0].fingers = {"f_index", "f_middle"}
         original = hand["Snap Hand Calibration"]
+        skin_name = self.skin.name
         with tempfile.TemporaryDirectory() as directory:
             bpy.ops.wm.save_as_mainfile(filepath=str(Path(directory) / "example.blend"))
             bpy.ops.wm.open_mainfile(filepath=str(Path(directory) / "example.blend"))
@@ -198,6 +200,9 @@ class HandPosingTests(unittest.TestCase):
             self.assertEqual(groups[0].name, "Together")
             self.assertEqual(groups[0].fingers, {"f_index", "f_middle"})
             self.assertEqual(len(rig.pose.bones["hand_ik.L"].hand_posing_finger_groups), 0)
+            self.assertIs(bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap"), ADDON.HAND_PT_snap)
+            self.assertTrue(bpy.ops.hand.snap.get_rna_type())
+            self.assertEqual(rig.pose.bones["hand_ik.R"].hand_on_surface_skin, bpy.data.objects[skin_name])
             solver = ADDON.retrieve_snap_solver(bpy.context, rig, "R")
             self.assertEqual(len(solver.calibration["fingers"]), 15)
 
@@ -226,9 +231,11 @@ class HandPosingTests(unittest.TestCase):
         hand = self.select_hand("R")
         bpy.ops.hand.add_finger_group()
         hand.hand_posing_finger_groups[0].fingers = {"thumb", "f_index"}
-        ADDON.register()
         ADDON.unregister()
         self.assertFalse(hasattr(bpy.types.PoseBone, "hand_posing_finger_groups"))
+        self.assertIsNone(bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap"))
+        self.assertFalse(hasattr(bpy.types.PoseBone, "snap_hand_surface"))
+        self.assertFalse(hasattr(bpy.types.PoseBone, "hand_on_surface_skin"))
         ADDON.register()
         self.assertTrue(hasattr(bpy.types.PoseBone, "snap_hand_surface"))
         self.assertTrue(bpy.ops.hand.snap.get_rna_type())
@@ -588,7 +595,8 @@ def create_follow_fixture(name="Follow rig"):
 
 class FollowRelationshipTests(unittest.TestCase):
     def setUp(self):
-        ADDON.register()
+        if bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_snap") is None:
+            ADDON.register()
         if bpy.context.object and bpy.context.object.mode != "OBJECT":
             bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action="SELECT")
@@ -725,7 +733,6 @@ class FollowRelationshipTests(unittest.TestCase):
         self.rig.data.bones["A"].name = "Renamed A"
         target.data.bones["B"].name = "Renamed B"
         target.name = "Renamed target rig"
-        ADDON.register()
         ADDON.unregister()
         self.assertIsNone(bpy.types.Panel.bl_rna_get_subclass_py("HAND_PT_follow_relationships"))
         self.assert_aim(source="Renamed A", target="Renamed B", offset=.5, target_rig=target)

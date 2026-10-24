@@ -3,11 +3,36 @@
 
 """Fit editable Rigify hand controls to mesh surfaces."""
 
+_needs_reload = "bpy" in locals()
+
 import bpy
-from bpy.app.handlers import persistent
+from . import (
+    rig_binding,
+    calibration,
+    snap_hand,
+    resting_hand_rectangle,
+    convex_hand_snap,
+    hand_surface_clearance,
+    skin_finger_refinement,
+    finger_groups,
+    follow_relationships,
+)
+
+if _needs_reload:
+    import importlib
+    rig_binding = importlib.reload(rig_binding)
+    calibration = importlib.reload(calibration)
+    snap_hand = importlib.reload(snap_hand)
+    resting_hand_rectangle = importlib.reload(resting_hand_rectangle)
+    convex_hand_snap = importlib.reload(convex_hand_snap)
+    hand_surface_clearance = importlib.reload(hand_surface_clearance)
+    skin_finger_refinement = importlib.reload(skin_finger_refinement)
+    finger_groups = importlib.reload(finger_groups)
+    follow_relationships = importlib.reload(follow_relationships)
 
 from .calibration import HandCalibration, retrieve_selected_rig
 from .snap_hand import HandSnap, HandSurface, retrieve_selected_hand, retrieve_snap_solver
+
 from .follow_relationships import retrieve_follow, retrieve_follows, set_follow, remove_follow
 
 __version__ = "0.1.0"
@@ -175,38 +200,6 @@ class HAND_OT_remove_follow_relationship(bpy.types.Operator):
         return {"FINISHED"} if remove_follow(context.object, self.source_bone) else {"CANCELLED"}
 
 
-def retrieve_source_revision():
-    """Return the SHA-256 of the current package's Python sources."""
-    import hashlib
-    from pathlib import Path
-    digest = hashlib.sha256()
-    for path in sorted(Path(__file__).parent.glob("*.py")):
-        if not path.name.startswith("test_"):
-            digest.update(path.name.encode())
-            digest.update(path.read_bytes())
-    return digest.hexdigest()
-
-
-def reload_for_development():
-    """Load edited solver files for the next interactive refinement."""
-    import importlib
-    import sys
-    for name in ("rig_binding", "calibration", "snap_hand", "resting_hand_rectangle",
-                 "convex_hand_snap", "hand_surface_clearance", "skin_finger_refinement", "finger_groups",
-                 "follow_relationships"):
-        qualified = __name__ + "." + name
-        if qualified in sys.modules:
-            importlib.reload(sys.modules[qualified])
-    solver = sys.modules[__name__ + ".snap_hand"]
-    for name in ("HandSnap", "HandSurface", "retrieve_selected_hand", "retrieve_snap_solver"):
-        globals()[name] = getattr(solver, name)
-    globals()["HandCalibration"] = sys.modules[__name__ + ".calibration"].HandCalibration
-    follows = sys.modules[__name__ + ".follow_relationships"]
-    for name in ("retrieve_follow", "retrieve_follows", "set_follow", "remove_follow"):
-        globals()[name] = getattr(follows, name)
-    register()
-
-
 class HAND_OT_calibrate_surface(bpy.types.Operator):
     bl_idname = "hand.calibrate_surface"
     bl_label = "Calibrate Hand"
@@ -330,44 +323,21 @@ CLASSES = (HAND_PG_finger_group, HAND_OT_add_finger_group, HAND_OT_remove_finger
            HAND_OT_calibrate_surface, HAND_OT_snap, HAND_PT_snap, HAND_PT_follow_relationships)
 
 
-@persistent
-def restore_interface(_document):
-    """Use the enabled extension's operators after loading a saved helper scene."""
-    register()
-
-
 def register():
-    for name in ("snap_hand_surface", "hand_on_surface_skin"):
-        if not hasattr(bpy.types.PoseBone, name):
-            setattr(bpy.types.PoseBone, name, bpy.props.PointerProperty(
-                name="Surface" if name == "snap_hand_surface" else "Hand skin", type=bpy.types.Object,
-                poll=lambda _bone, obj: obj.type == "MESH"))
     for cls in CLASSES:
-        previous = cls.__bases__[0].bl_rna_get_subclass_py(cls.__name__)
-        if previous != cls:
-            if cls == HAND_PG_finger_group and hasattr(bpy.types.PoseBone, "hand_posing_finger_groups"):
-                del bpy.types.PoseBone.hand_posing_finger_groups
-            if previous:
-                bpy.utils.unregister_class(previous)
-            bpy.utils.register_class(cls)
-    if not hasattr(bpy.types.PoseBone, "hand_posing_finger_groups"):
-        bpy.types.PoseBone.hand_posing_finger_groups = bpy.props.CollectionProperty(
-            name="Finger groups", type=HAND_PG_finger_group)
-    if not hasattr(bpy.types.PoseBone, "hand_posing_group_error"):
-        bpy.types.PoseBone.hand_posing_group_error = bpy.props.StringProperty(options={"SKIP_SAVE"})
-    if restore_interface not in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.append(restore_interface)
+        bpy.utils.register_class(cls)
+    for name in ("snap_hand_surface", "hand_on_surface_skin"):
+        setattr(bpy.types.PoseBone, name, bpy.props.PointerProperty(
+            name="Surface" if name == "snap_hand_surface" else "Hand skin", type=bpy.types.Object,
+            poll=lambda _bone, obj: obj.type == "MESH"))
+    bpy.types.PoseBone.hand_posing_finger_groups = bpy.props.CollectionProperty(
+        name="Finger groups", type=HAND_PG_finger_group)
+    bpy.types.PoseBone.hand_posing_group_error = bpy.props.StringProperty(options={"SKIP_SAVE"})
 
 
 def unregister():
-    if restore_interface in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.remove(restore_interface)
-    if hasattr(bpy.types.PoseBone, "hand_posing_finger_groups"):
-        del bpy.types.PoseBone.hand_posing_finger_groups
+    for name in ("hand_posing_finger_groups", "hand_posing_group_error",
+                 "snap_hand_surface", "hand_on_surface_skin"):
+        delattr(bpy.types.PoseBone, name)
     for cls in reversed(CLASSES):
-        previous = cls.__bases__[0].bl_rna_get_subclass_py(cls.__name__)
-        if previous == cls:
-            bpy.utils.unregister_class(cls)
-    for name in ("snap_hand_surface", "hand_on_surface_skin", "hand_posing_group_error"):
-        if hasattr(bpy.types.PoseBone, name):
-            delattr(bpy.types.PoseBone, name)
+        bpy.utils.unregister_class(cls)
