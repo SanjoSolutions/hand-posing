@@ -8,6 +8,9 @@ Existing native rig constraints guide the result. Auto Keying records the pose.
 Users can calibrate either hand from a skinned mesh, select a target surface,
 and snap the hand through the sidebar or operator search. Existing Snap Hand
 calibrations continue to work. Saved calibrations belong to the Blender file.
+Snapping accepts clear palm contact when surface curvature or joint limits leave
+some finger pads above the surface. Finger fitting still runs, and collision,
+reach, and joint limits remain enforced.
 
 Users can create, edit, and remove any number of finger groups for each hand,
 including no groups. Each finger, including the thumb, belongs to at most one

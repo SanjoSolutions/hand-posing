@@ -1,5 +1,21 @@
 # Validation
 
+Legacy hand contact was verified on October 22, 2026 with Blender 5.2.1 LTS.
+All 28 workflow tests passed, including three new contact regressions. The
+limited-finger fixture reproduces the original error on both hands with the
+previous solver and succeeds with the correction. Separate checks still reject
+finger penetration, joint-bound violations, and unreachable contact; failed
+snaps restore all controls and the IK blend without inserting animation keys.
+The isolated package check also passed installation, disable/enable, and
+fresh-process checks while preserving regular preferences.
+
+A snapshot from the animation window reproduced the reported error on its active
+`hand_ik.R` control. The corrected solver completed the same contact in a separate
+Blender process. It retained the native wrist constraints, a 3.44 mm heel gap,
+and palm penetration below the existing 2 mm tolerance. Finger pads that could
+not reach the curved surface no longer caused the whole placement to fail.
+The original animation file was not overwritten.
+
 ## Main merge verification
 
 The merge of `blender-org-extension` into main passed the isolated package

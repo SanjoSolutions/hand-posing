@@ -513,6 +513,94 @@ class HandPosingTests(unittest.TestCase):
                                 for a, b in zip(row, other)), .000001)
         self.assertIsNone(self.rig.animation_data)
 
+    def legacy_solver(self, side):
+        hand = self.calibrate(side)
+        calibration = json.loads(hand["Snap Hand Calibration"])
+        calibration.pop("contact_geometry")
+        for joint in calibration["fingers"].values():
+            joint.pop("skin_vertices")
+        hand["Snap Hand Calibration"] = json.dumps(calibration)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.mesh.primitive_plane_add(size=2, location=(0, 0, .02))
+        target = bpy.context.object
+        target.rotation_euler.x = math.pi
+        bpy.context.view_layer.update()
+        hand.snap_hand_surface = target
+        return ADDON.retrieve_snap_solver(bpy.context, self.rig, side), target
+
+    def test_legacy_snap_accepts_fitted_finger_gaps_with_native_limits(self):
+        for side in ("L", "R"):
+            with self.subTest(side=side):
+                solver, target = self.legacy_solver(side)
+                name = f"f_ring.01.{side}"
+                angle = math.radians(-25)
+                solver.calibration["fingers"][name]["bounds"][0] = [angle, angle]
+                solver.hand["Snap Hand Calibration"] = json.dumps(solver.calibration)
+                limit = self.rig.pose.bones[name].constraints.new("LIMIT_ROTATION")
+                limit.owner_space = "LOCAL"
+                limit.use_limit_x = True
+                limit.min_x = limit.max_x = angle
+                bpy.context.view_layer.update()
+                self.select_hand(side)
+                self.assertEqual(bpy.ops.hand.snap(), {"FINISHED"})
+                self.assert_group_bounds(solver)
+                surface = ADDON.HandSurface(target, bpy.context.evaluated_depsgraph_get(), self.rig, side)
+                self.assertLess(solver.skin.retrieve_penetration(surface), .002)
+                self.assertLess(min(abs(gap) for gap, _normal, _point
+                                    in solver.skin.retrieve_contacts(surface)), .005)
+                # Native extension limits prevent this hinge from reaching the
+                # surface, even though the palm and other pads have usable contact.
+                self.assertGreater(max(offset.length for offset, _normal
+                                       in solver.retrieve_middle_contacts(surface)), .006)
+                evaluated = self.rig.evaluated_get(bpy.context.evaluated_depsgraph_get())
+                joint = f"f_ring.02.{side}"
+                pose = evaluated.matrix_world @ evaluated.pose.bones[joint].matrix
+                gaps = []
+                for sample in solver.calibration["fingers"][joint]["samples"][:4]:
+                    point = pose @ Vector(sample)
+                    nearest, normal = surface.retrieve_nearest(point)
+                    gaps.append((point - nearest).dot(normal))
+                self.assertGreater(min(gaps), .003)
+
+    def test_legacy_fitted_contact_still_checks_collisions_and_joint_bounds(self):
+        solver, target = self.legacy_solver("R")
+        solver.snap(target)
+        convex = importlib.import_module(ADDON.__name__ + ".convex_hand_snap")
+        surface = ADDON.HandSurface(target, bpy.context.evaluated_depsgraph_get(), self.rig, "R")
+        palm = solver.retrieve_hand_pose() @ solver.wrist.inverted()
+        placement = convex.RestingHandRectangle(surface, palm, solver.calibration["support"])
+        self.assertIsNotNone(solver.retrieve_contact_gap(surface, placement, require_finger_contact=False))
+        bone = self.rig.pose.bones["f_index.03.R"]
+        original = bone.matrix_basis.copy()
+        for axis, angle in (("X", 60), ("Y", 10)):
+            with self.subTest(axis=axis):
+                bone.matrix_basis = original @ Matrix.Rotation(math.radians(angle), 4, axis)
+                self.rig.update_tag()
+                bpy.context.view_layer.update()
+                self.assertIsNone(solver.retrieve_contact_gap(surface, placement, require_finger_contact=False))
+        bone.matrix_basis = original
+        self.rig.update_tag()
+        bpy.context.view_layer.update()
+        self.assertIsNotNone(solver.retrieve_contact_gap(surface, placement, require_finger_contact=False))
+
+    def test_legacy_unreachable_contact_restores_all_controls_without_keys(self):
+        solver, target = self.legacy_solver("R")
+        original = {bone.name: bone.matrix_basis.copy() for bone in solver.retrieve_controls()}
+        parent = self.rig.pose.bones["upper_arm_parent.R"]
+        original_blend = parent["IK_FK"]
+        limit = self.rig.pose.bones["DEF-hand.R"].constraints.new("LIMIT_LOCATION")
+        limit.owner_space = "WORLD"
+        limit.use_min_z = limit.use_max_z = True
+        limit.min_z = limit.max_z = 0
+        bpy.context.view_layer.update()
+        with self.assertRaises(ValueError):
+            solver.snap(target, keyframe=True)
+        self.assertEqual(parent["IK_FK"], original_blend)
+        for bone in solver.retrieve_controls():
+            self.assertLess(max(abs(a - b) for row, other in zip(bone.matrix_basis, original[bone.name])
+                                for a, b in zip(row, other)), .000001)
+        self.assertIsNone(self.rig.animation_data)
+
     def test_generated_rigify_hand_calibration(self):
         import addon_utils
         if self.rig.mode != "OBJECT":

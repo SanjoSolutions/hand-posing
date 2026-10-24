@@ -175,7 +175,8 @@ class HandControlPlacement:
         # Curved surfaces establish the attainable heel contact for this hand.
         self.placement.heel_tolerance = max(0.005, self.snap.skin.retrieve_heel_gap(
             self.placement.surface, palm, self.placement.anchor))
-        reference_valid = self.snap.retrieve_contact_gap(self.placement.surface, self.placement) is not None
+        reference_valid = self.snap.retrieve_contact_gap(
+            self.placement.surface, self.placement, require_finger_contact=False) is not None
         retained = {bone.name: bone.matrix_basis.copy() for bone in self.snap.retrieve_controls()}
         reference_diagnostics = self.snap.wrist_diagnostics.copy()
         candidates = sorted(((key, sample) for key, sample in available
@@ -191,7 +192,8 @@ class HandControlPlacement:
             if distinct:
                 tried.append(best[1])
                 self.apply(key, best, initial)
-                if self.snap.retrieve_contact_gap(self.placement.surface, self.placement) is not None:
+                if self.snap.retrieve_contact_gap(
+                        self.placement.surface, self.placement, require_finger_contact=False) is not None:
                     fitted = True
                     break
                 if len(tried) == 8:
@@ -221,7 +223,8 @@ class HandControlPlacement:
             sample = self.evaluate(seed, angles)
             if math.isfinite(sample[0]) and sample[3] < movement:
                 self.apply((seed, *angles), sample, initial)
-                if self.snap.retrieve_contact_gap(self.placement.surface, self.placement) is not None:
+                if self.snap.retrieve_contact_gap(
+                        self.placement.surface, self.placement, require_finger_contact=False) is not None:
                     movement = sample[3]
                     retained = {bone.name: bone.matrix_basis.copy() for bone in self.snap.retrieve_controls()}
                     diagnostics = self.snap.wrist_diagnostics.copy()
@@ -525,7 +528,7 @@ class ConvexHandSnap(HandSnap):
                                            "contact_shift": (point - previous @ placement.anchor).length})
             reference.capture(gap)
 
-    def retrieve_contact_gap(self, surface, placement):
+    def retrieve_contact_gap(self, surface, placement, *, require_finger_contact=True):
         """Return widget distance for a pose with usable skin contact, in meters."""
         palm = self.retrieve_hand_pose() @ self.wrist.inverted()
         control = self.rig.matrix_world @ self.hand.matrix
@@ -546,7 +549,12 @@ class ConvexHandSnap(HandSnap):
                 point = pose @ Vector(sample)
                 nearest, normal = surface.retrieve_nearest(point)
                 gaps.append((point - nearest).dot(normal))
-            if min(gaps) < -0.002 or calibration["segment"] > 1 and min(gaps) > 0.003:
+            if min(gaps) < -0.002:
+                fingers_clear = False
+            # Tight pad contact permits skipping the solve for an existing pose.
+            # Once fingers have been fitted, curvature and joint limits can leave
+            # gaps without making a clear, reachable palm placement invalid.
+            if require_finger_contact and calibration["segment"] > 1 and min(gaps) > 0.003:
                 fingers_clear = False
             frame = evaluated.matrix_world @ evaluated.pose.bones[calibration["parent"]].matrix @ retrieve_matrix(calibration["rest"])
             angles = (frame.inverted() @ pose).to_euler("XYZ")
@@ -555,7 +563,7 @@ class ConvexHandSnap(HandSnap):
                 fingers_clear = False
         if (alignment < 0.002 and clearance >= -0.00002 and heel <= getattr(placement, "heel_tolerance", 0.008)
                 and min((gap for gap, _normal, _point in contacts), default=-math.inf) >= -0.002
-                and middle <= 0.006 and fingers_clear):
+                and (not require_finger_contact or middle <= 0.006) and fingers_clear):
             return rectangle
         return None
 
